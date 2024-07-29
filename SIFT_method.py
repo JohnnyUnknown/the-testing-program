@@ -1,4 +1,5 @@
 import cv2 as cv
+import math
 from decimal import *
 import numpy as np
 
@@ -10,17 +11,14 @@ class Compare():
     key_1 = 0
     key_2 = 0
 
-    def __init__(self, kp, des, height, img_size, img_2, height_2, img, iter):
+    def __init__(self, kp, des, height, img_size, img_2, height_2, img):
         self.kp1 = kp
         self.des1 = des
-        self.flight_altitude = height_2
         self.height_map = height
         self.img_size = img_size
-        self.img1 = img
-        self.iter = iter
-
-        # self.img1 = cv.imread(self.path_main, cv.IMREAD_GRAYSCALE)
         self.gray = img_2
+        self.flight_altitude = height_2
+        self.img1 = img             # print_map
 
         self.comparator()
         self.get_data()
@@ -88,39 +86,31 @@ class Compare():
         # name = self.path_main.split('\\')[-1][:-4]
         cv.imwrite(f"main.jpg", img3)
 
-    # Определение географических координат местоположения дрона
-    def determ_coordinates(self, img, center):
-        y, x = img.shape
-        # MapFree cam5
-        first_x = Decimal(46.159330)
-        first_y = Decimal(48.238724)
-        second_x = Decimal(46.164232)
-        second_y = Decimal(48.245512)
-
-        pixel_price_x = Decimal((second_x - first_x) / x)
-        pixel_price_y = Decimal((first_y - second_y) / y)
-        center_coord = [round((pixel_price_x*center[0]+first_x), 6), round(first_y-(pixel_price_y*center[1]), 6)]
-        self.center = center_coord
-
     # Маска проверки найденных КТ на карте
     def pixel_mask(self, matches):    # принимаются координаты КТ главного изображения
-        # print(matches[0], self.img_size)
         correct_matches = []
         mask_correction = 2
-        sum_x, sum_y = 0, 0
-        for i in range(len(matches)):
-            sum_x += matches[i][0]
-            sum_y += matches[i][1]
-        medium_x = int(sum_x / len(matches))
-        medium_y = int(sum_y / len(matches))
+        match_x = sorted(matches, key=lambda i: i[1])
+        match_y = sorted(matches)
+
+        if len(matches) % 2 == 0:
+            indx1 = int(len(matches)/2-1)
+            indx2 = int(len(matches)/2)
+            median_x = (match_x[indx1][1] + match_x[indx2][1]) / 2
+            median_y = (match_y[indx1][0] + match_y[indx2][0]) / 2
+        else:
+            indx = int((len(matches)-1)/2)
+            median_x = match_x[indx][1]
+            median_y = match_y[indx][0]
+
         # Нахождение коэффициента разницы высот полета и главного снимка для маски
         height_coefficient = int(self.height_map / self.flight_altitude)
 
         for i in range(len(matches)):
-            if ((matches[i][1] >= medium_y - self.img_size[0] / (height_coefficient * mask_correction))
-                    and (matches[i][1] < medium_y + self.img_size[0] / (height_coefficient * mask_correction))):
-                if ((matches[i][0] >= medium_x - self.img_size[1] / (height_coefficient * mask_correction))
-                        and (matches[i][0] < medium_x + self.img_size[1] / (height_coefficient * mask_correction))):
+            if ((matches[i][0] >= median_y - self.img_size[1] / (height_coefficient * mask_correction))
+                    and (matches[i][0] < median_y + self.img_size[1] / (height_coefficient * mask_correction))):
+                if ((matches[i][1] >= median_x - self.img_size[0] / (height_coefficient * mask_correction))
+                        and (matches[i][1] < median_x + self.img_size[0] / (height_coefficient * mask_correction))):
                     correct_matches.append(matches[i])
         return correct_matches
 
@@ -130,7 +120,7 @@ class Compare():
         self.key_1 = len(self.kp1)
         self.key_2 = len(kp2)
 
-        if len(kp2) > 1:
+        if len(kp2) > 2:
             good_matches = self.matcher(self.des1, des2)
             if good_matches != None:
                 # поиск общих КТ на главном изображении
@@ -138,16 +128,13 @@ class Compare():
                 # Сравнение найденных общих КТ с маской проверки
                 main_matches = self.pixel_mask(main_matches)
                 self.filter_matches = len(main_matches)
-                if len(main_matches) > 1:
-                    center = self.search_center(main_matches)
-                    self.center = center
-                    # self.print_map(center)
+                if len(main_matches) > 2:
+                    self.center = self.search_center(main_matches)
+                    self.print_map(self.center)
 
-                # self.determ_coordinates(self.img1, center)
 
     def get_data(self):
         find = True if self.center != None else False
-        # print(self.center_location)
         # key_1 - кол-во КТ на опорном изображении; key_2 - кол-во КТ на области видимости;
         # good_match - кол-во общих КТ; filter_matches - кол-во общих КТ после фильтра;
         # find - найдено ли местоположение; center - координаты
