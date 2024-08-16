@@ -16,7 +16,9 @@ class Determ_coord():
         point_pixel4 = [image_size[0], 0]
 
         point4 = self.find_p4(point1, point2, point3)
+        # print("undo", point1, point2, point3, point4)
         self.point1, self.point2, self.point3, self.point4 = self.new_points(point1, point2, point3, point4)
+        # print(self.point1, self.point2, self.point3, self.point4)
         self.point_pixel1, self.point_pixel2, self.point_pixel3, self.point_pixel4 = (
             self.new_pixel_points(point_pixel1, point_pixel2, point_pixel3, point_pixel4))
 
@@ -31,8 +33,10 @@ class Determ_coord():
     def calculate(self, pixel_center):
         self.target_pixel_point[0] = pixel_center[1]
         self.target_pixel_point[1] = pixel_center[0]
+        # print(f"{pixel_center=}, {self.target_pixel_point=}")
         if self.angle != 0:
             self.new_center()
+            # print(f"{pixel_center=}, {self.target_pixel_point=}")
             self.target_point[0] = self.find_latitude()
             self.target_point[1] = self.find_longitude()
         else:
@@ -66,6 +70,8 @@ class Determ_coord():
                     array_out.append(array[i])
                     i = i + 1 if i < 3 else 0
                 break
+            elif temp == array[i] and i == 0:
+                return array
         # print(array)
         # print(array_out)
         # print(self.count_rotate)

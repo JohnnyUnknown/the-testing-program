@@ -5,57 +5,47 @@ import numpy as np
 import time
 import math
 
+
 # Создание файла и заголовка протокола
 def protocol_head(access):
-    out_str = ""
     data = [
         " номер | Кол-во КТ опорного | Кол-во КТ обл. | Кол-во | Кол-во общих КТ | Вариант | Отклонение от",
         " п/п | изображения | видимости | общих КТ | после фильтра | искажения | истины (метров)"
     ]
 
-    for i in range(sum(width) + 8):
-        out_str += "-"
-    out_str += "\n"
+    out_str = "-" * (sum(width) + 8) + "\n"
 
     for row in data:
         first_str, second_str, third_str, four_str, five_str, six_str, seven_str = row.split("|")
         out_str += ("|" + first_str.ljust(width[0]) + "|" + second_str.ljust(width[1]) + "|" + third_str.ljust(
             width[2]) + "|" + four_str.ljust(width[3]) +
-                    "|" + five_str.ljust(width[4]) + "|" + six_str.ljust(width[5]) + "|" + seven_str.ljust(
+                    "|" + five_str.ljust(width[4]) + "|    " + six_str.ljust(width[5]-4) + "|" + seven_str.ljust(
                     width[6]) + "|" + "\n")
 
-    for i in range(sum(width) + 8):
-        out_str += "-"
-    out_str += "\n"
+    out_str += "-" * (sum(width) + 8) + "\n"
+
     with open(name_protocol, access) as out_file:
         if access == "w":
             out_file.write(f"\t\t\tПротокол прохода {name_crop} над изображением {name} с шагом {step} пикселей.\n\n")
         out_file.write(f"\nИмитация высоты полета на {flight_altitude} м. Высота опорного изображения: {height} м.\n")
         out_file.write(out_str)
 
-# Функция сшивания изображений
-def stitcher(images_list):
-    # Создание объекта для сшивания изображений
-    stitcher = cv.Stitcher_create()
-    # Сшивка изображений
-    result = stitcher.stitch(images_list)
-    print(result[0])
-    # Проверка на успешность сшивки
-    if result[0] == 0:  # Успешное сшивание
-        # Отображение сшитого изображения
-        cv.imshow("Stitched Image", result[1])
-        cv.waitKey(0)
-        cv.destroyAllWindows()
-    else:
-        print("Не удалось выполнить сшивание изображений.")
 
-def print_line():
-    with open(name_protocol, "a") as out_file:
-        out_data = ""
-        for i in range((sum(width) + 8)):
-            out_data += "-"
-        out_data += "\n"
-        out_file.write(out_data)
+def print_data(all_data, width_table):
+    cnt = 0
+    out_data = "|"
+    for data in all_data:
+        space = int((width_table[cnt] - len(str(data))) / 2)  # расчет центрального положения данных в протоколе
+        temp_str = (" " * space + str(data))
+        out_data += (temp_str.ljust(width_table[cnt]) + "|")
+        cnt += 1
+    return out_data
+
+
+def print_line(width):
+    out_data = "-" * (sum(width) + len(width) + 1) + "\n"
+    return out_data
+
 
 def rotate_image(img, deg):
     height, width = img.shape[:2]
@@ -63,6 +53,7 @@ def rotate_image(img, deg):
     M = cv.getRotationMatrix2D((center_x, center_y), deg, 1.0)
     out_image = cv.warpAffine(img, M, (width, height))
     return out_image
+
 
 def brightness(img, value):
     color = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
@@ -80,15 +71,18 @@ def brightness(img, value):
     img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
     return img
 
+
 def add_noise(img):
     noise = np.zeros(img.shape, np.uint8)
     cv.randn(noise, 0, 20)
     img_n = cv.add(img, noise)
     return img_n
 
+
 def add_blur(img):
     img_bl = cv.blur(img, (5, 5))
     return img_bl
+
 
 def augmentation(img, aug_index):
     out_img = img.copy()
@@ -109,6 +103,7 @@ def augmentation(img, aug_index):
             out_img = add_blur(img)
     return out_img
 
+
 def clahe_improvement(img):
     clahe = cv.createCLAHE(2, (5, 5))
     # bgr = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
@@ -120,6 +115,7 @@ def clahe_improvement(img):
     # img2 = cv.cvtColor(img2, cv.COLOR_BGR2GRAY)
     img2 = clahe.apply(img)
     return img2
+
 
 def gauss_improvement(img):
     # Дилатация (увеличение светлых пятен)
@@ -142,35 +138,38 @@ def gauss_improvement(img):
     # img2 = cv.filter2D(img, -1, kernel)
     return img2
 
+
 def fluctuation(center, center2):
-    coord_find_point = determ.calculate(center)
+    coord_find_point = determ_main.calculate(center)
     coord_center = determ_vision.calculate(center2)
-    fluct = [round(coord_center[0]-coord_find_point[0], 6), round(coord_center[1]-coord_find_point[1], 6)]
+    fluct = [round(coord_center[0] - coord_find_point[0], 6), round(coord_center[1] - coord_find_point[1], 6)]
     meters_dolong = round((6378137 * math.cos(float(coord_find_point[0]) * math.pi / 180) * 2 * math.pi) / 360, 3)
     meters_dolat = 111100
     fluct_meters_y = fluct[0] * meters_dolat
     fluct_meters_x = fluct[1] * meters_dolong
-    fluct_meters = round(math.sqrt(fluct_meters_x*fluct_meters_x + fluct_meters_y*fluct_meters_y), 3)
+    fluct_meters = round(math.sqrt(fluct_meters_x * fluct_meters_x + fluct_meters_y * fluct_meters_y), 1)
     return fluct_meters
 
 
-
-main_path = 'C:\\My\\Projects\\images\\main\\WK_00005-1.jpg'          # Опорное изображение
+main_path = 'C:\\My\\Projects\\images\\main\\WK_00005-1.jpg'  # Опорное изображение
 big_map = cv.imread(main_path, cv.IMREAD_GRAYSCALE)
-crop_img_path = 'C:\\My\\Projects\\images\\main\\WK_00002.jpg'      # Изображение для взятия областей видимости
+crop_img_path = 'C:\\My\\Projects\\images\\main\\google.jpg'  # Изображение для взятия областей видимости
 main_crop_img = cv.imread(crop_img_path, cv.IMREAD_GRAYSCALE)
-height = 500                                # Высота снимка опорного изображения
-height_crop_img = 200                       # Высота снимка взятия областей видимости
 
-height_difference = 5                       # Разность высот снимков для изменения размеров области видимости
-augmentation_index = 0                      # Индекс типа искажения изображения
-all_found_points = 0                        # Всего найдено координат
-found_points = 0                            # Найдено координат на каждой высоте
-width = [7, 20, 16, 10, 17, 20, 16]         # Ширина столбцов протокола
-step = 500                                  # Шаг смещения области видимости по опорному изображению
-abs_fluctuation = [0, 0]                    # Среднее отклонение прогнозов программы от истины
-iteration = 0
-all_iter = 0
+# Параметры настройки
+height = 500  # Высота снимка опорного изображения
+height_crop_img = 1000  # Высота снимка взятия областей видимости
+dist_kf = 0.48  # Коэффициент точности сравнения опорных точек
+height_difference = (height / height_crop_img)  # Разность высот снимков для изменения размеров области видимости
+height_difference_change = 5  # Коэффициент для изменения размеров области видимости
+step = 300  # Шаг смещения области видимости по опорному изображению
+
+augmentation_index = 0  # Индекс типа искажения изображения
+all_found_points = 0  # Всего найдено координат
+found_points = 0  # Найдено координат на каждой высоте
+width = [7, 20, 16, 10, 17, 20, 16]  # Ширина столбцов протокола
+iteration = 0   # Количество сравнений на каждой высоте
+all_iter = 0    # Общее количество сравнений на всех высотах
 general_percent_statistics = []
 local_percent_statistic = ["Найдено %"]
 general_fluctuation_statistics = []
@@ -181,28 +180,19 @@ augment = {
     4: "Яркость +30", 5: "Яркость -30", 6: "Добавление шумов", 7: "Размытость (5, 5)"
 }
 
-first_x = 46.164273
-first_y = 48.245954
-second_x = 46.166415
-second_y = 48.238956
-third_x = 46.160394
-third_y = 48.238237
-p1 = (first_y, first_x)
-p2 = (second_y, second_x)
-p3 = (third_y, third_x)
+# Координаты углов опорного изображения
+point_main1 = (48.245954, 46.164273)  # Левый верхний угол
+point_main2 = (48.238956, 46.166415)  # Правый верхний угол
+point_main3 = (48.238237, 46.160394)  # Нижний верхний угол
 
-first_vx = 46.162271
-first_vy = 48.243964
-second_vx = 46.163686
-second_vy = 48.241188
-third_vx = 46.160974
-third_vy = 48.240549
-pv1 = (first_vy, first_vx)
-pv2 = (second_vy, second_vx)
-pv3 = (third_vy, third_vx)
+# Координаты углов изображения области видимости
+point_view1 = (48.243964, 46.162271)    # Левый верхний угол
+point_view2 = (48.241188, 46.163686)    # Правый верхний угол
+point_view3 = (48.240549, 46.160974)    # Нижний верхний угол
 
-determ = DC.Determ_coord(p1, p2, p3, big_map.shape)
-determ_vision = DC.Determ_coord(pv1, pv2, pv3, main_crop_img.shape)
+determ_main = DC.Determ_coord(point_main1, point_main2, point_main3, big_map.shape)
+determ_vision = DC.Determ_coord(point_view1, point_view2, point_view3, main_crop_img.shape)
+
 start_program = time.perf_counter()
 
 sift = cv.SIFT_create()
@@ -215,12 +205,12 @@ name_crop = crop_img_path.split("\\")[-1][:-4]
 name_protocol = f"SIFT_m-'{name}'_v-'{name_crop}'_step{step}_protocol.txt"
 
 for i in range(4):
-    height_difference += 5   # (10 / (height / height_crop_img))
+    height_difference += height_difference_change
     flight_altitude = round((height / height_difference), 2)  # Примерная высота полета
     height_coefficient = round((flight_altitude / height_crop_img), 2)
 
-    local_iter = 0
-    local_found_points = 0
+    local_iter = 0  # Количество сравнений на каждой высоте при каждом искажении
+    local_found_points = 0  # Количество найденных координат на каждой высоте при каждом искажении
 
     protocol_head("a" if i > 0 else "w")
 
@@ -239,12 +229,12 @@ for i in range(4):
             crop_img = main_crop_img[y1:y2, x1:x2]
             crop_img = gauss_improvement(crop_img)
             crop_img = augmentation(crop_img, augmentation_index)
-            # cv.imshow(" ", crop_img)
-            # cv.waitKey(0)
-            # cv.destroyAllWindows()
+            # crop_img = cv.resize(crop_img, (300, 150), cv.INTER_NEAREST)
 
             # Сравнение изображений
             test = cmp.Compare(kp, des, height, big_map.shape, crop_img, flight_altitude, big_map)
+            test.set_dist_kf(dist_kf)
+            test.comparator()
 
             # Формирование списка с данными для внесения в протокол
             data_compare = test.get_data()
@@ -254,29 +244,24 @@ for i in range(4):
             local_found_points += 1 if data_compare[4] else 0
 
             data_compare.pop(4)
-            # # Вычисление отклонения найденного местоположения от реального
-            # if data_compare[4] != None:
-            #     # real_center = [int((x2-x1) / 2), int((y2-y1) / 2)]
-            #     # fluctuation = [real_center[0] - data_compare[4][0], real_center[1] - data_compare[4][1]]
-            #     # abs_fluctuation[0] += abs(fluctuation[0])
-            #     # abs_fluctuation[1] += abs(fluctuation[1])
-            #
-            #     # Отрисовка точек на областях видимости
-            #     if augmentation_index == 0:
-            #         start_point = data_compare[4]
-            #         end_point = data_compare[4]
-            #         color = (0, 0, 255)
-            #         thickness = 20
-            #         img3 = cv.rectangle(crop_img, start_point, end_point, color, thickness)
-            #         cv.imwrite(f"{all_iter}_crop.jpg", img3)
-            # # else:
-            # #     fluctuation = "не найдено"
-            data_compare.insert(0, iteration)                       # добавление номера итерации
-            data_compare.insert(5, augment[augmentation_index])     # добавление индекса искажения
-            center_vision = [(x1+x2)/2, (y1+y2)/2]
-            # print(data_compare[6], center_vision)
+
+            # Вычисление отклонения найденного местоположения от реального
+            data_compare.insert(0, iteration)  # добавление номера итерации
+            data_compare.insert(5, augment[augmentation_index])  # добавление индекса искажения
+            center_vision = [round((x1 + x2) / 2), round((y1 + y2) / 2)]
             data_compare[6] = "не найдено" if data_compare[6] == None else fluctuation(data_compare[6], center_vision)
             local_fluct = local_fluct + data_compare[6] if data_compare[6] != "не найдено" else local_fluct
+
+            # Показ текущей области видимости с отмеченным центром
+            # if data_compare[6] != "не найдено":
+            #     start_point = [center_vision[0]-x1, center_vision[1]-y1]
+            #     end_point = [center_vision[0]-x1, center_vision[1]-y1]
+            #     color = (0, 0, 255)
+            #     thickness = 15
+            #     img3 = cv.rectangle(crop_img, start_point, end_point, color, thickness)
+            #     cv.imshow(f"crop image", img3)
+            #     cv.waitKey(0)
+            #     cv.destroyAllWindows()
 
             # Проход по изображению
             x1 += step
@@ -288,31 +273,33 @@ for i in range(4):
                 y2 += step
 
             # Запись полученных данных в протокол
-            out_data = ""
-            cnt = 0
             with open(name_protocol, "a") as out_file:
-                for data in data_compare:
-                    space = int((width[cnt] - len(str(data))) / 2)      # расчет центрального положения данных в протоколе
-                    temp_str = (" " * space + str(data))
-                    out_data += ("|" + temp_str.ljust(width[cnt]))
-                    cnt += 1
-                out_data += "|\n"
-                out_file.write(out_data)
-        print_line()
+                out_file.write(print_data(data_compare, width) + "\n")
+        if local_iter > 0:
+            with open(name_protocol, "a") as out_file:
+                out_file.write(print_line(width))
 
-        local_percent_statistic.append(f"{int(local_found_points/local_iter*100)} % ({local_found_points} из {local_iter})")
-        if local_found_points > 0:
-            local_fluctuation_statistic.append(f"{round(local_fluct / local_found_points, 3)} м")
-        else:
+        try:
+            local_percent_statistic.append(
+                f"{int(local_found_points / local_iter * 100)} % ({local_found_points} из {local_iter})")
+        except ZeroDivisionError:
+            local_percent_statistic.append("Сравнений не произошло.")
+
+        try:
+            local_fluctuation_statistic.append(f"{round(local_fluct / local_found_points, 1)} м")
+        except ZeroDivisionError:
             local_fluctuation_statistic.append("Не найдено")
         local_found_points = 0
         local_iter = 0
         augmentation_index += 1
 
-    with open(name_protocol, "a") as out_file:
-        out_file.write(f"Разница высот опорного изображения и области видимости: {round(height/flight_altitude, 1)} раз.\nИз {iteration} сравнений найдено координат: "
-                       f"{found_points}. процент нахождения - {round(found_points/iteration*100, 1)} %\n\n")
-    print_line()
+    with (open(name_protocol, "a") as out_file):
+        out_str = (f"Разница высот опорного изображения и области видимости: {round(height / flight_altitude, 1)} раз."
+                   f"\nИз {iteration} сравнений найдено координат: {found_points}. "
+                   f"Процент нахождения - {round(found_points / iteration * 100, 1)} %\n\n")
+        out_file.write(out_str)
+        out_file.write(print_line(width))
+
     augmentation_index = 0
     iteration = 0
     found_points = 0
@@ -326,51 +313,70 @@ min = round((finish - start_program) // 60)
 sec = round((finish - start_program) % 60)
 
 width_statistic_table = [12, 18, 18, 18, 18, 18, 18, 18, 18]
-line = "\n"
-for i in range((sum(width_statistic_table) + 10)):
-    line += "-"
-line += "\n"
 
+# Формирование итогов проверки
 with open(name_protocol, "a") as out_file:
     out_file.write(f"\n\nВремя выполнения программы: {min} мин. {sec} сек.\n")
-    # out_file.write(f"Среднее время выполнения одного вычисления: {round(((finish - start_program) * 1000) / all_iter) } миллисекунд.\n")
-    out_file.write(f"Из {all_iter} сравнений найдено координат: {all_found_points}. Средний процент нахождения - {round(all_found_points/all_iter*100, 1)} %\n")
-    # try:
-    #     out_file.write(f"Среднее отклонение от нормы: [{round(abs_fluctuation[0]/all_found_points, 1)}, {round(abs_fluctuation[1]/all_found_points, 1)}].\n\n")
-    # except ZeroDivisionError:
-    #     out_file.write("Общих точек не найдено!\n")
+    out_file.write(
+        f"Из {all_iter} сравнений найдено координат: {all_found_points}. Средний процент нахождения - {round(all_found_points / all_iter * 100, 1)} %\n")
 
-    for i in range(4):
-        fl_al = round((height / ((i+2)*5)), 2)
-        out_file.write(f"\n\nИмитация высоты полета на {fl_al} м. Разница высот с опорным изображением в {round(height/fl_al, 1)} раз.")
-        out_file.write(line)
+    average_percent = [0, 0, 0, 0, 0, 0, 0, 0]
+    average_fluct = [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]
+
+    height_difference -= 4 * height_difference_change
+
+    for i in range(5):
+
+        # Заголовок таблицы
+        if i < 4:
+            height_difference += height_difference_change  # (10 / (height / height_crop_img))
+            flight_altitude = round((height / height_difference), 2)  # Примерная высота полета
+            out_file.write(
+                f"\n\nИмитация высоты полета на {flight_altitude} м. Разница высот с опорным изображением в {round(height / flight_altitude, 1)} раз.\n")
+        elif i == 4:
+            out_file.write(f"\n\nОбщая статистика по всем высотам.\n")
+        out_file.write(print_line(width_statistic_table))
         cnt = 0
 
+        # Шапка таблицы
         heading = "|" + " " * width_statistic_table[cnt] + "|"
         for j in range(8):
-            space = int((width_statistic_table[j+1] - len(augment[j])) / 2)  # расчет центрального положения данных в протоколе
+            space = int((width_statistic_table[j + 1] - len(
+                augment[j])) / 2)  # расчет центрального положения данных в протоколе
             temp_str = (" " * space + augment[j])
-            heading += temp_str.ljust(width_statistic_table[j+1]) + "|"
-        out_file.write(heading)
-        out_file.write(line)
+            heading += temp_str.ljust(width_statistic_table[j + 1]) + "|"
+        out_file.write(heading + "\n")
+        out_file.write(print_line(width_statistic_table))
 
-        out_data = ""
-        for data in general_percent_statistics[i]:
-            space = int((width_statistic_table[cnt] - len(data)) / 2)  # расчет центрального положения данных в протоколе
-            temp_str = (" " * space + data)
-            out_data += ("|" + temp_str.ljust(width_statistic_table[cnt]))
-            cnt += 1
-        out_data += "|"
-        out_file.write(out_data)
-        out_file.write(line)
+        # Внесение данных в итоговую таблицу по высотам
+        if i < 4:
+            out_file.write(print_data(general_percent_statistics[i], width_statistic_table) + "\n")
+            out_file.write(print_line(width_statistic_table))
 
-        cnt = 0
-        out_data = ""
-        for data in general_fluctuation_statistics[i]:
-            space = int((width_statistic_table[cnt] - len(data)) / 2)  # расчет центрального положения данных в протоколе
-            temp_str = (" " * space + data)
-            out_data += ("|" + temp_str.ljust(width_statistic_table[cnt]))
-            cnt += 1
-        out_data += "|"
-        out_file.write(out_data)
-        out_file.write(line)
+            out_file.write(print_data(general_fluctuation_statistics[i], width_statistic_table) + "\n")
+            out_file.write(print_line(width_statistic_table))
+
+            # Суммирование данных для общей таблицы
+            for j in range(1, 9):
+                average_percent[j - 1] += int(general_percent_statistics[i][j].split(" %")[0])
+                if general_fluctuation_statistics[i][j] != "Не найдено":
+                    average_fluct[j - 1][0] += float(general_fluctuation_statistics[i][j].split(" м")[0])
+                    average_fluct[j - 1][1] += 1
+
+        # Внесение данных в итоговую общую таблицу
+        elif i == 4:
+            for j in range(8):
+                average_percent[j] = str(round(average_percent[j] / 4)) + " %"
+                try:
+                    average_fluct[j] = str(round(average_fluct[j][0] / average_fluct[j][1], 1)) + " м"
+                except ZeroDivisionError:
+                    average_fluct[j] = "Не Найдено"
+
+            average_percent.insert(0, "Найдено %")
+            average_fluct.insert(0, "Отклонение")
+
+            out_file.write(print_data(average_percent, width_statistic_table) + "\n")
+            out_file.write(print_line(width_statistic_table))
+
+            out_file.write(print_data(average_fluct, width_statistic_table) + "\n")
+            out_file.write(print_line(width_statistic_table))

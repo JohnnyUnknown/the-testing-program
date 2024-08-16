@@ -3,6 +3,7 @@ import math
 from decimal import *
 import numpy as np
 
+
 class Compare():
     good_match = 0
     filter_matches = 0
@@ -10,6 +11,7 @@ class Compare():
     center_location = None
     key_1 = 0
     key_2 = 0
+    dist_kf = 0.48
 
     def __init__(self, kp, des, height, img_size, img_2, height_2, img):
         self.kp1 = kp
@@ -18,10 +20,10 @@ class Compare():
         self.img_size = img_size
         self.gray = img_2
         self.flight_altitude = height_2
-        self.img1 = img             # print_map
+        self.img1 = img  # print_map
 
-        self.comparator()
-        self.get_data()
+        # self.comparator()
+        # self.get_data()
 
     # Поиск КТ изображения
     def search_KP(self, img):
@@ -35,12 +37,16 @@ class Compare():
     def matcher(self, des1, des2):
         # Инициализация BFMatcher
         bf = cv.BFMatcher()
+        # FLANN_INDEX_KDTREE = 1
+        # index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
+        # search_params = dict(checks=3)  # or pass empty dictionary
+        # flann = cv.FlannBasedMatcher(index_params, search_params)
         matches = bf.knnMatch(des1, des2, k=2)
 
         # Нахождение общих точек
         good = []
         for m, n in matches:
-            if m.distance < 0.43 * n.distance:
+            if m.distance < self.dist_kf * n.distance:
                 good.append(m)
         self.good_match = len(good)
         if len(good) >= 3:
@@ -81,25 +87,24 @@ class Compare():
         start_point = center
         end_point = center
         color = (0, 0, 255)
-        thickness = 30
+        thickness = 25
         img3 = cv.rectangle(self.img1, start_point, end_point, color, thickness)
-        # name = self.path_main.split('\\')[-1][:-4]
         cv.imwrite(f"main.jpg", img3)
 
     # Маска проверки найденных КТ на карте
-    def pixel_mask(self, matches):    # принимаются координаты КТ главного изображения
+    def pixel_mask(self, matches):  # принимаются координаты КТ главного изображения
         correct_matches = []
         mask_correction = 2
         match_x = sorted(matches, key=lambda i: i[1])
         match_y = sorted(matches)
 
         if len(matches) % 2 == 0:
-            indx1 = int(len(matches)/2-1)
-            indx2 = int(len(matches)/2)
+            indx1 = int(len(matches) / 2 - 1)
+            indx2 = int(len(matches) / 2)
             median_x = (match_x[indx1][1] + match_x[indx2][1]) / 2
             median_y = (match_y[indx1][0] + match_y[indx2][0]) / 2
         else:
-            indx = int((len(matches)-1)/2)
+            indx = int((len(matches) - 1) / 2)
             median_x = match_x[indx][1]
             median_y = match_y[indx][0]
 
@@ -115,7 +120,6 @@ class Compare():
         return correct_matches
 
     def comparator(self):
-        # kp1, des1 = self.search_KP(self.img1)
         kp2, des2 = self.search_KP(self.gray)
         self.key_1 = len(self.kp1)
         self.key_2 = len(kp2)
@@ -132,10 +136,12 @@ class Compare():
                     self.center = self.search_center(main_matches)
                     self.print_map(self.center)
 
-
     def get_data(self):
         find = True if self.center != None else False
         # key_1 - кол-во КТ на опорном изображении; key_2 - кол-во КТ на области видимости;
         # good_match - кол-во общих КТ; filter_matches - кол-во общих КТ после фильтра;
         # find - найдено ли местоположение; center - координаты
         return [self.key_1, self.key_2, self.good_match, self.filter_matches, find, self.center]
+
+    def set_dist_kf(self, num):
+        self.dist_kf = num
