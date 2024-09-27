@@ -1,4 +1,5 @@
 import cv2 as cv
+import numpy as np
 import Comparator as Cmp
 import Determ_coord as DC
 import Preprocessing as Prep
@@ -9,14 +10,12 @@ import math
 
 class MainProcess():
     stop_flag = False
-    name_protocol = ""
-    name = ""
-    name_crop = ""
     determ_main = None
     determ_vision = None
     flight_altitude = None
-    width = [7, 20, 16, 10, 17, 20, 16]  # Ширина столбцов протокола
-    width_statistic_table = [12, 18, 18, 18, 18, 18, 18, 18, 18]  # Ширина столбцов итоговой таблицы
+    # temp_protocol = ""
+    width = [7, 16, 16, 10, 17, 15, 16]  # Ширина столбцов протокола
+    width_statistic_table = [12, 13, 13, 13, 13, 13, 13, 13, 13]  # Ширина столбцов итоговой таблицы
     augmentation_index = 0  # Индекс типа искажения изображения
     all_found_points = 0  # Всего найдено координат
     found_points = 0  # Найдено координат на каждой высоте
@@ -39,20 +38,23 @@ class MainProcess():
         self.step = step
         self.cycles = cycles
         self.method_index = method
-        self.show_flag = show
         self.main_coordinates = coord1
         self.crop_img_coordinates = coord2
+        self.show_image_flag = show
+        # Обновление изображения для отображения всех точек
+        cv.imwrite("main_with_points.jpg", self.big_map)
 
         # Определение названия метода поиска контрольных точек и изображений. Формирование имени файла протокола
         self.name = self.main_path.split('\\')[-1][:-4]
         self.name_crop = self.crop_img_path.split("\\")[-1][:-4]
-        self.name_protocol = f"Protocols\\{self.methods[self.method_index]}_m-'{self.name}'_v-'{self.name_crop}'_step{self.step}_protocol.txt"
+        self.name_protocol = (f"Protocols\\{self.methods[self.method_index]}_m-'{self.name[-5:]}'"
+                              f"_v-'{self.name_crop[-5:]}'_step={self.step}_kf={self.dist_kf}_protocol.txt")
 
     # Создание файла и заголовка протокола
     def protocol_head(self, access):
         data = [
-            " номер | Кол-во КТ опорного | Кол-во КТ обл. | Кол-во | Кол-во общих КТ | Вариант | Отклонение от",
-            " п/п | изображения | видимости | общих КТ | после фильтра | искажения | истины (метров)"
+            " Номер|   Кол-во КТ | Кол-во КТ обл. |  Кол-во | Кол-во общих КТ |  Вариант | Отклонение от",
+            "  п/п | опорного изобр.|   видимости | общих КТ |  после фильтра | искажения | истины (метров)"
         ]
 
         out_str = "-" * (sum(self.width) + 8) + "\n"
@@ -61,7 +63,7 @@ class MainProcess():
             first_str, second_str, third_str, four_str, five_str, six_str, seven_str = row.split("|")
             out_str += ("|" + first_str.ljust(self.width[0]) + "|" + second_str.ljust(self.width[1]) + "|" +
                         third_str.ljust(self.width[2]) + "|" + four_str.ljust(self.width[3]) +
-                        "|" + five_str.ljust(self.width[4]) + "|    " + six_str.ljust(self.width[5] - 4) + "|" +
+                        "|" + five_str.ljust(self.width[4]) + "|  " + six_str.ljust(self.width[5] - 2) + "|" +
                         seven_str.ljust(self.width[6]) + "|" + "\n")
 
         out_str += "-" * (sum(self.width) + 8) + "\n"
@@ -69,11 +71,15 @@ class MainProcess():
         with open(self.name_protocol, access) as out_file:
             if access == "w":
                 out_file.write(
-                    f"\t\tМетод {self.methods[self.method_index]}. Протокол прохода {self.name_crop} "
-                    f"над изображением {self.name} с шагом {self.step} пикселей.\n\n")
+                    f"\t\t\tПротокол прохода по изображению {self.name_crop} с шагом {self.step} пикселей \n\t\t\t\t"
+                    f"и сравнение с {self.name} методом {self.methods[self.method_index]}.\n\n")
+                # self.temp_protocol += f"\t\tМетод {self.methods[self.method_index]}. Протокол прохода по изображению {self.name_crop} "
+                # f"с шагом {self.step} пикселей и сравнение с {self.name}.\n\n"
             out_file.write(
                 f"\nИмитация высоты полета на {self.flight_altitude} м. Высота опорного изображения: {self.height} м.\n")
             out_file.write(out_str)
+            # self.temp_protocol += f"\nИмитация высоты полета на {self.flight_altitude} м. Высота опорного изображения: {self.height} м.\n"
+            # self.temp_protocol += out_str
 
     def print_data(self, all_data, width_table):
         cnt = 0
@@ -83,10 +89,12 @@ class MainProcess():
             temp_str = (" " * space + str(data))
             out_data += (temp_str.ljust(width_table[cnt]) + "|")
             cnt += 1
+        # self.temp_protocol += out_data + "\n"
         return out_data
 
     def print_line(self, width):
         out_data = "-" * (sum(width) + len(width) + 1) + "\n"
+        # self.temp_protocol += out_data
         return out_data
 
     # Вычисление СКО предсказания от истинного значения
@@ -117,6 +125,81 @@ class MainProcess():
         crop_img = Prep.augmentation(crop_img, augmentation_index)
         return crop_img
 
+    # Формирование и распечатка итоговой статистики проверки
+    def print_main_statistic(self, minutes, seconds, general_percent_statistics, general_fluctuation_statistics):
+        with open(self.name_protocol, "a") as out_file:
+            out_file.write(f"\n\nВремя выполнения программы: {minutes} мин. {seconds} сек.\n")
+            out_file.write(
+                f"Из {self.all_iter} сравнений найдено координат: {self.all_found_points}. Средний процент нахождения - "
+                f"{round(self.all_found_points / self.all_iter * 100, 1)} %\n")
+
+            average_percent = [0, 0, 0, 0, 0, 0, 0, 0]
+            average_fluct = [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]
+
+            self.height_difference -= self.cycles * self.height_difference_change
+
+            # Вычисление и печать итоговых таблиц проверки
+            for i in range(self.cycles + 1):
+                # Заголовок таблицы
+                if i < self.cycles:
+                    self.height_difference += self.height_difference_change  # (10 / (height / height_crop_img))
+                    flight_altitude = round((self.height / self.height_difference), 2)  # Примерная высота полета
+                    out_file.write(
+                        f"\n\nИмитация высоты полета на {flight_altitude} м. Разница высот с опорным изображением в "
+                        f"{round(self.height / flight_altitude, 1)} раз.\n")
+                elif i == self.cycles:
+                    out_file.write(f"\n\nОБЩАЯ СТАТИСТИКА ПО ВСЕМ ВЫСОТАМ.\n")
+                out_file.write(self.print_line(self.width_statistic_table))
+                cnt = 0
+
+                # Шапка таблицы
+                heading = "|" + " " * self.width_statistic_table[cnt] + "|"
+                for j in range(8):
+                    # расчет центрального положения данных в протоколе
+                    space = int((self.width_statistic_table[j + 1] - len(Prep.augment[j])) / 2)
+                    temp_str = (" " * space + Prep.augment[j])
+                    heading += temp_str.ljust(self.width_statistic_table[j + 1]) + "|"
+                out_file.write(heading + "\n")
+                out_file.write(self.print_line(self.width_statistic_table))
+
+                # Внесение данных в итоговую таблицу по высотам
+                if i < self.cycles:
+                    out_file.write(
+                        self.print_data(general_percent_statistics[i], self.width_statistic_table) + "\n")
+                    out_file.write(self.print_line(self.width_statistic_table))
+
+                    out_file.write(
+                        self.print_data(general_fluctuation_statistics[i], self.width_statistic_table) + "\n")
+                    out_file.write(self.print_line(self.width_statistic_table))
+
+                    # Суммирование данных для общей таблицы
+                    for j in range(1, 9):
+                        try:
+                            average_percent[j - 1] += int(general_percent_statistics[i][j].split(" %")[0])
+                        except ValueError:
+                            average_percent[j - 1] = 100
+                        if general_fluctuation_statistics[i][j] != "Не найдено":
+                            average_fluct[j - 1][0] += float(general_fluctuation_statistics[i][j].split(" м")[0])
+                            average_fluct[j - 1][1] += 1
+
+                # Внесение данных в итоговую общую таблицу
+                elif i == self.cycles:
+                    for j in range(8):
+                        average_percent[j] = str(round(average_percent[j] / self.cycles)) + " %"
+                        try:
+                            average_fluct[j] = str(round(average_fluct[j][0] / average_fluct[j][1], 1)) + " м"
+                        except ZeroDivisionError:
+                            average_fluct[j] = "Не Найдено"
+
+                    average_percent.insert(0, "Найдено %")
+                    average_fluct.insert(0, "Отклонение")
+
+                    out_file.write(self.print_data(average_percent, self.width_statistic_table) + "\n")
+                    out_file.write(self.print_line(self.width_statistic_table))
+
+                    out_file.write(self.print_data(average_fluct, self.width_statistic_table) + "\n")
+                    out_file.write(self.print_line(self.width_statistic_table))
+
     def start_cycle(self):
         general_percent_statistics = []
         local_percent_statistic = ["Найдено %"]  # Процент найденных точек на каждой высоте
@@ -126,13 +209,16 @@ class MainProcess():
         # Предобработка опорного изображения
         self.big_map = self.preprocess_main_image(self.big_map)
 
+        # Создание карт по изображениям и угловым координатам
         self.determ_main = DC.Determ_coord(self.main_coordinates[0], self.main_coordinates[1],
                                            self.main_coordinates[2], self.big_map.shape)
         self.determ_vision = DC.Determ_coord(self.crop_img_coordinates[0], self.crop_img_coordinates[1],
                                              self.crop_img_coordinates[2], self.main_crop_img.shape)
 
         start_program = time.perf_counter()
+        paused_time = 0
 
+        # Выбор метода и определение особых точек на опорном изображении
         method = SM.Method(self.method_index, self.dist_kf)
         kp, des = method.get_kp_and_des(self.big_map)
 
@@ -174,8 +260,7 @@ class MainProcess():
                     crop_img = self.preprocess_crop_image(crop_img, self.augmentation_index)
 
                     # Сравнение изображений
-                    test = Cmp.Compare(self.big_map, kp, des, self.height, crop_img, self.flight_altitude,
-                                       self.method_index, self.dist_kf)
+                    test = Cmp.Compare(self.big_map, kp, des, self.height, crop_img, self.flight_altitude, method)
                     test.comparator()
 
                     # Формирование списка с данными для внесения в протокол
@@ -201,16 +286,21 @@ class MainProcess():
                     with open(self.name_protocol, "a") as out_file:
                         out_file.write(self.print_data(data_compare, self.width) + "\n")
 
-                    # # Показ текущей области видимости с отмеченным центром
-                    # if data_compare[6] != "не найдено":
-                    #     start_point = [center_vision[0] - x1, center_vision[1] - y1]
-                    #     end_point = [center_vision[0] - x1, center_vision[1] - y1]
-                    #     color = (0, 0, 255)
-                    #     thickness = 15
-                    #     img3 = cv.rectangle(crop_img, start_point, end_point, color, thickness)
-                    #     cv.imshow(f"crop image", img3)
-                    #     cv.waitKey(0)
-                    #     cv.destroyAllWindows()
+                    # Вывод изображений сравнения
+                    if data_compare[6] != "не найдено" and self.show_image_flag:
+                        start_paused = time.perf_counter()
+                        center_crop_image = [center_vision[0] - x1, center_vision[1] - y1]
+                        main_image_for_show, crop_image_for_show = test.print_map(center_crop_image)
+                        cv.imshow("Main image", Prep.resize_img(main_image_for_show, 1280))
+                        if crop_image_for_show.shape[1] > 1280:
+                            new_width = 1280
+                        else:
+                            new_width = crop_image_for_show.shape[1]
+                        cv.imshow("Crop image", Prep.resize_img(crop_image_for_show, new_width))
+                        cv.waitKey(0)
+                        cv.destroyAllWindows()
+                        end_paused = time.perf_counter()
+                        paused_time += end_paused - start_paused
 
                     # Проход по изображению
                     x1 += self.step
@@ -227,9 +317,9 @@ class MainProcess():
 
                 try:
                     local_percent_statistic.append(
-                        f"{int(local_found_points / local_iter * 100)} % ({local_found_points} из {local_iter})")
+                        f"{int(local_found_points / local_iter * 100)} % ({local_found_points}/{local_iter})")
                 except ZeroDivisionError:
-                    local_percent_statistic.append("Сравнений не было!")
+                    local_percent_statistic.append("Нет данных")
 
                 try:
                     local_fluctuation_statistic.append(f"{round(sum_local_fluct / local_found_points, 1)} м")
@@ -249,8 +339,9 @@ class MainProcess():
                 except ZeroDivisionError:
                     out_str = (
                         f"Разница высот опорного изображения и области видимости: {round(self.height / self.flight_altitude, 1)} "
-                        f"раз.\nСравнений не было!\n\n")
+                        f"раз.\nОшибка разности высот! Сравнений не производилось.\n\n")
                 out_file.write(out_str)
+                # self.temp_protocol += out_str
                 out_file.write(self.print_line(self.width))
 
             self.augmentation_index = 0
@@ -262,88 +353,12 @@ class MainProcess():
             local_fluctuation_statistic = ["Отклонение"]
 
         finish = time.perf_counter()
-        minutes = round((finish - start_program) // 60)
-        seconds = round((finish - start_program) % 60)
+        minutes = round((finish - start_program - paused_time) // 60)
+        seconds = round((finish - start_program - paused_time) % 60)
 
-        # --------------------------------------------------------------------------------------------------------
-
-        # Формирование итогов проверки
+        # Формирование и распечатка итоговой статистики проверки
         if not self.stop_flag:
-            with open(self.name_protocol, "a") as out_file:
-                out_file.write(f"\n\nВремя выполнения программы: {minutes} мин. {seconds} сек.\n")
-                out_file.write(
-                    f"Из {self.all_iter} сравнений найдено координат: {self.all_found_points}. Средний процент нахождения - "
-                    f"{round(self.all_found_points / self.all_iter * 100, 1)} %\n")
-
-                average_percent = [0, 0, 0, 0, 0, 0, 0, 0]
-                average_fluct = [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]
-
-                self.height_difference -= self.cycles * self.height_difference_change
-
-                # Вычисление и печать итоговых таблиц проверки
-                for i in range(self.cycles + 1):
-                    # Заголовок таблицы
-                    if i < self.cycles:
-                        self.height_difference += self.height_difference_change  # (10 / (height / height_crop_img))
-                        flight_altitude = round((self.height / self.height_difference), 2)  # Примерная высота полета
-                        out_file.write(
-                            f"\n\nИмитация высоты полета на {flight_altitude} м. Разница высот с опорным изображением в "
-                            f"{round(self.height / flight_altitude, 1)} раз.\n")
-                    elif i == self.cycles:
-                        out_file.write(f"\n\nОБЩАЯ СТАТИСТИКА ПО ВСЕМ ВЫСОТАМ.\n")
-                    out_file.write(self.print_line(self.width_statistic_table))
-                    cnt = 0
-
-                    # Шапка таблицы
-                    heading = "|" + " " * self.width_statistic_table[cnt] + "|"
-                    for j in range(8):
-                        # расчет центрального положения данных в протоколе
-                        space = int((self.width_statistic_table[j + 1] - len(Prep.augment[j])) / 2)
-                        temp_str = (" " * space + Prep.augment[j])
-                        heading += temp_str.ljust(self.width_statistic_table[j + 1]) + "|"
-                    out_file.write(heading + "\n")
-                    out_file.write(self.print_line(self.width_statistic_table))
-
-                    # Внесение данных в итоговую таблицу по высотам
-                    if i < self.cycles:
-                        out_file.write(
-                            self.print_data(general_percent_statistics[i], self.width_statistic_table) + "\n")
-                        out_file.write(self.print_line(self.width_statistic_table))
-
-                        out_file.write(
-                            self.print_data(general_fluctuation_statistics[i], self.width_statistic_table) + "\n")
-                        out_file.write(self.print_line(self.width_statistic_table))
-
-                        # Суммирование данных для общей таблицы
-                        for j in range(1, 9):
-                            try:
-                                average_percent[j - 1] += int(general_percent_statistics[i][j].split(" %")[0])
-                            except ValueError:
-                                average_percent[j - 1] = 100
-                            if general_fluctuation_statistics[i][j] != "Не найдено":
-                                average_fluct[j - 1][0] += float(general_fluctuation_statistics[i][j].split(" м")[0])
-                                average_fluct[j - 1][1] += 1
-
-                    # Внесение данных в итоговую общую таблицу
-                    elif i == self.cycles:
-                        for j in range(8):
-                            average_percent[j] = str(round(average_percent[j] / self.cycles)) + " %"
-                            try:
-                                average_fluct[j] = str(round(average_fluct[j][0] / average_fluct[j][1], 1)) + " м"
-                            except ZeroDivisionError:
-                                average_fluct[j] = "Не Найдено"
-
-                        average_percent.insert(0, "Найдено %")
-                        average_fluct.insert(0, "Отклонение")
-
-                        out_file.write(self.print_data(average_percent, self.width_statistic_table) + "\n")
-                        out_file.write(self.print_line(self.width_statistic_table))
-
-                        out_file.write(self.print_data(average_fluct, self.width_statistic_table) + "\n")
-                        out_file.write(self.print_line(self.width_statistic_table))
-
-
-
+            self.print_main_statistic(minutes, seconds, general_percent_statistics, general_fluctuation_statistics)
 
 # main_path = 'C:\\My\\Projects\\images\\main\\WK_00005-1.jpg'  # Опорное изображение
 # big_map = None
@@ -367,9 +382,7 @@ class MainProcess():
 # point_view1 = (48.245465, 46.163374)  # Левый верхний угол
 # point_view2 = (48.239811, 46.165553)  # Правый верхний угол
 # point_view3 = (48.239240, 46.160377)  # Нижний верхний угол
-
-
-
+#
 # obj2 = MainProcess(main_path, height, crop_img_path, height_crop_img, dist_kf, height_difference_change,
 #                    step, cycles, method_index, False, [point_main1,point_main2,point_main3],
 #                    [point_view1,point_view2,point_view3])

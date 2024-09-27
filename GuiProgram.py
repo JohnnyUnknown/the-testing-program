@@ -25,19 +25,9 @@ class Worker(QThread):
 
 class Program(QWidget):
     main_process = None
-    metka_stop = False
-    # # Координаты углов опорного изображения
-    # point_main1 = (48.245954, 46.164273)  # Левый верхний угол
-    # point_main2 = (48.238956, 46.166415)  # Правый верхний угол
-    # point_main3 = (48.238237, 46.160394)  # Нижний верхний угол
-    # # Координаты углов изображения области видимости
-    # point_view1 = (48.245465, 46.163374)  # Левый верхний угол
-    # point_view2 = (48.239811, 46.165553)  # Правый верхний угол
-    # point_view3 = (48.239240, 46.160377)  # Нижний верхний угол
-
+    metka_stop = False  # Для вывода информации об остановке процесса
     coord1 = []
     coord2 = []
-    methods = {1: "SIFT", 2: "AKAZE", 3: "ORB", 4: "ASIFT", 5: "SuperPoint"}
 
     def __init__(self):
         super().__init__()
@@ -77,8 +67,8 @@ class Program(QWidget):
 
         # Текстовое поле для вывода информации
         self.text_output = QTextEdit(self)
-        self.text_output.setMinimumWidth(1200)
-        font = QFont("Lucida Console", 8, 400)
+        self.text_output.setMinimumWidth(930)
+        font = QFont("Lucida Console", 9, 400)
         self.text_output.setCurrentFont(font)
         self.text_output.setReadOnly(True)
         left_layout.addWidget(self.text_output)
@@ -139,6 +129,7 @@ class Program(QWidget):
 
         coord_info_label = QLabel("Три угловые координаты изображений")
         coord_info_label.setFixedHeight(20)
+        coord_info_label.setStyleSheet("font-size: 12px; font-weight: bold;")
         layouts_for_right[0].addWidget(coord_info_label, 5, 2, 1, 5)
         coord_left_label = QLabel("Основное изображение:")
         coord_left_label.setFixedHeight(20)
@@ -182,7 +173,8 @@ class Program(QWidget):
         # ---------------------------Параметры проверки первая линия-------------------------------
 
         label5 = QLabel("Параметры проверки:")
-        label5.setFixedHeight(100)
+        label5.setMinimumHeight(50)
+        label5.setMaximumHeight(100)
         label5.setStyleSheet("font-size: 14px; font-weight: bold;")
         layouts_for_right[1].addWidget(label5)
         layouts_for_right[1].setAlignment(label5, Qt.AlignHCenter)
@@ -265,6 +257,7 @@ class Program(QWidget):
         layouts_for_right[6].addWidget(self.method)
         layout_plug = QHBoxLayout()
         self.imshow = QRadioButton("Вывод \nизображений", self)
+        self.imshow.toggled.connect(self.show_images)
         plug3 = QLabel()
         plug3.setFixedWidth(15)
         layout_plug.addWidget(plug3)
@@ -284,6 +277,10 @@ class Program(QWidget):
 
         self.load_program_state()
 
+    def show_images(self):
+        if self.main_process:
+            self.main_process.show_image_flag = self.imshow.isChecked()
+
     def update_text_edit(self):
         self.text_output.clear()
         # Обновляем содержимое QTextEdit
@@ -295,12 +292,8 @@ class Program(QWidget):
             pass
         except IndexError:
             os.remove("Program state.txt")
-
         for state in states:
             self.text_output.append(state)
-        # Вывод информации в окно QTextEdit в реальном времени
-        # self.text_output.append(text)
-        # self.text_output.ensureCursorVisible()  # Прокрутка окна вниз
 
     def clear_main_height(self):
         self.height.clear()
@@ -322,7 +315,8 @@ class Program(QWidget):
                                                        int(float(self.step.text())), self.cycles.currentIndex() + 1,
                                                        self.method.currentIndex() + 1,
                                                        self.imshow.isChecked(), self.coord1, self.coord2)
-                    # Создаем поток Worker и подключаем сигналы
+
+                    # Создаем процесс Worker и подключаем сигналы
                     self.worker = Worker(self.main_process)
                     self.worker.finished.connect(self.on_finished)
 
@@ -339,7 +333,7 @@ class Program(QWidget):
     def stop_program(self):
         self.metka_stop = True
         if self.worker == None or not self.worker.isRunning():
-            self.show_message("Программа не работает.")
+            self.show_message("Нет запущенных вычислений.")
         else:
             if self.worker:
                 self.worker.stop()  # Останавливаем поток
@@ -428,6 +422,8 @@ class Program(QWidget):
             return index
 
         def coordinates(string):
+            if len(string) < 16:
+                return 0, 0
             coord1 = string.split(char_for_split(string))[0]
             index = len(coord1)
             coord1 = coord1 if len(coord1) == 9 else coord1 + "0" * (9 - len(coord1))
@@ -451,7 +447,7 @@ class Program(QWidget):
                            point_main3[1], point_view1[0], point_view1[1], point_view2[0], point_view2[1],
                            point_view3[0], point_view3[1]]
             for field in fields_list:
-                if len(str(field)) < 6:
+                if len(str(field)) < 7:
                     return True
 
             self.main_coord_1.setText(str(point_main1[0]) + ", " + str(point_main1[1]))

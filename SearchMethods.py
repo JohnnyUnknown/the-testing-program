@@ -34,7 +34,6 @@ class Method():
             case _:
                 self.search_model = cv.SIFT_create()
 
-        # Выбор метода поиска КТ
 
     # Поиск КТ изображения
     def get_kp_and_des(self, img):

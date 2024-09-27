@@ -1,4 +1,6 @@
 import cv2 as cv
+import os
+import matplotlib.pyplot as plt
 import SearchMethods as SM
 
 
@@ -11,7 +13,7 @@ class Compare():
     key_2 = 0  # Кол-во контрольных точек области видимости
     method = None  # Объект класса Method
 
-    def __init__(self, img, kp, des, height, img_2, altitude, method_index, dist):
+    def __init__(self, img, kp, des, height, img_2, altitude, method):
         self.img1 = img  # print_map
         self.kp1 = kp
         self.des1 = des
@@ -19,7 +21,7 @@ class Compare():
         self.img_size = img.shape
         self.gray = img_2
         self.flight_altitude = altitude
-        self.method = SM.Method(method_index, dist)
+        self.method = method
 
     # Поиск списка координат общих КТ на главном изображении
     def find_area(self, good_matches, kp1):
@@ -49,13 +51,27 @@ class Compare():
         return [center_x, center_y]
 
     # Отображение местоположения дрона на главном изображении
-    def print_map(self, center):
-        start_point = center
-        end_point = center
-        color = (0, 0, 255)
-        thickness = 25
-        img3 = cv.rectangle(self.img1, start_point, end_point, color, thickness)
-        cv.imwrite(f"main.jpg", img3)
+    def print_map(self, center2):
+        # Отрисовка найденного центра на опороном изображении
+        color = (0, 0, 0)
+        temp_main_img = self.img1.copy()
+        main_img = cv.circle(temp_main_img, self.center, radius=10, color=color, thickness=20)
+        crop_img = cv.circle(self.gray, center2, radius=3, color=color, thickness=6)
+
+        return main_img, crop_img
+
+        # # Создаем фигуру и оси для отображения изображений
+        # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+        # plt.subplots_adjust(left=0.005, right=0.995, wspace=0.005)
+        # ax1.imshow(main_img)
+        # ax1.axis('off')  # Убираем оси
+        # ax2.imshow(self.gray)
+        # ax2.axis('off')
+        # point_img1 = self.center  # координаты точки на первом изображении
+        # point_gray = center2  # координаты точки на втором изображении
+        # ax1.scatter(*point_img1, color='red', s=30)  # s - размер точки
+        # ax2.scatter(*point_gray, color='red', s=30)
+        # plt.show()
 
     # Маска проверки найденных КТ на карте
     def pixel_mask(self, matches):  # принимаются координаты КТ главного изображения
@@ -101,7 +117,14 @@ class Compare():
                 self.filter_matches = len(main_matches)
                 if len(main_matches) > 2:
                     self.center = self.search_center(main_matches)
-                    self.print_map(self.center)
+
+                    # Формирование изображения со всеми найденными точками
+                    if os.path.exists("main_with_points.jpg"):
+                        main_img_with_points = cv.circle(cv.imread("main_with_points.jpg"), self.center, radius=10,
+                                                              color=(0, 0, 0), thickness=20)
+                        cv.imwrite("main_with_points.jpg", main_img_with_points)
+                    else:
+                        cv.imwrite("main_with_points.jpg", self.img1)
 
     def get_data(self):
         find = True if self.center != None else False
