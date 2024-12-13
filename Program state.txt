@@ -1,13 +1,13 @@
-WK_00005-1.jpg
+C:\My\Projects\images\main\WK_00005-1.jpg
 500
-WK_00004-1.jpg
+C:\My\Projects\images\main\WK_00004-1.jpg
 400
 0.48
-4
-50
-4
-[3, 'ASIFT']
-True
+3
+100
+3
+[4, 'SuperPoint']
+False
 48.245954, 46.164273
 48.238956, 46.166415
 48.238237, 46.160394

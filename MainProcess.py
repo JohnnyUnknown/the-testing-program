@@ -127,7 +127,7 @@ class MainProcess():
                 f"{round(self.all_found_points / self.all_iter * 100, 1)} %\n")
 
             total_percent = [0, 0, 0, 0, 0, 0, 0, 0]
-            total_fluct = [0, 0, 0, 0, 0, 0, 0, 0]
+            total_fluct = [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]
             working_cycles = [0, 0, 0, 0, 0, 0, 0, 0]
 
             self.height_difference -= self.cycles * self.height_difference_change
@@ -171,18 +171,19 @@ class MainProcess():
                         try:
                             percent = int(general_percent_statistics[i][j].split(" %")[0])
                             total_percent[j - 1] += percent
-                            working_cycles[j - 1] += 1 if percent else 0
+                            working_cycles[j - 1] += 1 if type(percent) is int else 0
                         except ValueError:
                             print("Value Error")
                         if general_fluctuation_statistics[i][j] != "Не найдено":
-                            total_fluct[j - 1] += float(general_fluctuation_statistics[i][j].split(" м")[0])
+                            total_fluct[j - 1][0] += float(general_fluctuation_statistics[i][j].split(" м")[0])
+                            total_fluct[j - 1][1] += 1
 
                 # Внесение данных в итоговую общую таблицу
                 elif i == self.cycles:
                     for j in range(8):
                         try:
                             total_percent[j] = str(round(total_percent[j] / working_cycles[j])) + " %"
-                            total_fluct[j] = str(round(total_fluct[j] / working_cycles[j], 1)) + " м"
+                            total_fluct[j] = str(round(total_fluct[j][0] / total_fluct[j][1], 1)) + " м"
                         except ZeroDivisionError:
                             total_percent[j] = "Нет данных"
                             total_fluct[j] = "Не Найдено"
