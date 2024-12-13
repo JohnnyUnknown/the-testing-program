@@ -1,9 +1,9 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QFont
+import MainProcess as MP
 import sys
 import os
-import MainProcess as MP
 
 
 # Определение потока для выполнения вычислений
@@ -183,18 +183,18 @@ class Program(QWidget):
         label_height_diff = QLabel("Увеличение. раз/цикл")
         label_height_diff.setMinimumWidth(110)
         label_height_diff.setMaximumHeight(30)
-        label_step = QLabel("Смещение (пиксели)")
-        label_step.setMinimumWidth(110)
-        label_step.setMaximumHeight(30)
         label_cycles = QLabel("Кол-во циклов")
         label_cycles.setMinimumWidth(110)
         label_cycles.setMaximumHeight(30)
+        label_step = QLabel("Доп. сдвиг в пикселях")
+        label_step.setMinimumWidth(110)
+        label_step.setMaximumHeight(30)
         label_imshow = QLabel("Точность сравнения")
         label_imshow.setMinimumWidth(110)
         label_imshow.setMaximumHeight(30)
         layouts_for_right[2].addWidget(label_height_diff)
-        layouts_for_right[2].addWidget(label_step)
         layouts_for_right[2].addWidget(label_cycles)
+        layouts_for_right[2].addWidget(label_step)
         layouts_for_right[2].addWidget(label_imshow)
 
         self.height_diff = QComboBox(self)
@@ -202,25 +202,25 @@ class Program(QWidget):
         self.height_diff.setMinimumWidth(110)
         self.height_diff.setMaximumWidth(120)
         self.height_diff.setStyleSheet("font-size: 14px; font-weight: 500;")
-        self.step = QLineEdit(self)
-        self.step.setMinimumWidth(110)
-        self.step.setMaximumWidth(120)
-        self.step.setStyleSheet("font-size: 14px; font-weight: 500;")
-        self.step.setAlignment(Qt.AlignCenter)
+
         self.cycles = QComboBox(self)
         self.cycles.setMinimumWidth(110)
         self.cycles.setMaximumWidth(120)
         self.cycles.addItems(["1", "2", "3", "4", "5"])
         self.cycles.setStyleSheet("font-size: 14px; font-weight: 500;")
-        # self.cycles.setAlignment(Qt.AlignCenter)
         self.dist = QLineEdit(self)
         self.dist.setMinimumWidth(100)
         self.dist.setMaximumWidth(120)
         self.dist.setStyleSheet("font-size: 14px; font-weight: 500;")
         self.dist.setAlignment(Qt.AlignCenter)
+        self.step = QLineEdit(self)
+        self.step.setMinimumWidth(100)
+        self.step.setMaximumWidth(120)
+        self.step.setStyleSheet("font-size: 14px; font-weight: 500;")
+        self.step.setAlignment(Qt.AlignCenter)
         layouts_for_right[3].addWidget(self.height_diff)
-        layouts_for_right[3].addWidget(self.step)
         layouts_for_right[3].addWidget(self.cycles)
+        layouts_for_right[3].addWidget(self.step)
         layouts_for_right[3].addWidget(self.dist)
 
         # "Промежуток"
@@ -231,10 +231,10 @@ class Program(QWidget):
         # ------------------------------Параметры проверки вторая линия------------------------------
 
         # Настройки программы вторая линия
-        label_step = QLabel("Выбор метода")
-        label_step.setMinimumWidth(110)
-        label_step.setMaximumHeight(30)
-        layouts_for_right[5].addWidget(label_step)
+        label_method = QLabel("Выбор метода")
+        label_method.setMinimumWidth(110)
+        label_method.setMaximumHeight(30)
+        layouts_for_right[5].addWidget(label_method)
 
         self.method = QComboBox(self)
         self.method.addItems(["SIFT", "AKAZE", "ORB", "ASIFT", "SuperPoint"])
@@ -254,7 +254,6 @@ class Program(QWidget):
         self.stop.clicked.connect(self.stop_program)
         self.stop.setStyleSheet("background-color: red; color: white; font-size: 14px; font-weight: 500;")
 
-        layouts_for_right[6].addWidget(self.method)
         layout_plug = QHBoxLayout()
         self.imshow = QRadioButton("Вывод \nизображений", self)
         self.imshow.toggled.connect(self.show_images)
@@ -262,6 +261,7 @@ class Program(QWidget):
         plug3.setFixedWidth(15)
         layout_plug.addWidget(plug3)
         layout_plug.addWidget(self.imshow)
+        layouts_for_right[6].addWidget(self.method)
         layouts_for_right[6].addLayout(layout_plug)
         layouts_for_right[6].addWidget(self.start)
         layouts_for_right[6].addWidget(self.stop)
@@ -283,8 +283,8 @@ class Program(QWidget):
 
     def update_text_edit(self):
         self.text_output.clear()
-        # Обновляем содержимое QTextEdit
         name_protocol = self.main_process.name_protocol
+        states = ""
         try:
             with open(name_protocol, "r") as out_file:
                 states = out_file.readlines()
@@ -307,14 +307,20 @@ class Program(QWidget):
                 self.metka_stop = False
                 if self.worker == None or self.worker.isFinished():
                     self.save_program_state()
-
-                    self.main_process = MP.MainProcess(self.main_path.text(), int(float(self.height.text())),
-                                                       self.second_path.text(),
-                                                       int(float(self.height_crop.text())), float(self.dist.text()),
-                                                       self.height_diff.currentIndex() + 1,
-                                                       int(float(self.step.text())), self.cycles.currentIndex() + 1,
-                                                       self.method.currentIndex() + 1,
-                                                       self.imshow.isChecked(), self.coord1, self.coord2)
+                    self.main_process = MP.MainProcess(
+                        path1=self.main_path.text(),
+                        height1=int(float(self.height.text())),
+                        path2=self.second_path.text(),
+                        height2=int(float(self.height_crop.text())),
+                        dist_kf=float(self.dist.text()),
+                        height_diff=self.height_diff.currentIndex() + 1,
+                        cycles=self.cycles.currentIndex() + 1,
+                        step=int(float(self.step.text())),
+                        method=self.method.currentIndex() + 1,
+                        show=self.imshow.isChecked(),
+                        coord1=self.coord1,
+                        coord2=self.coord2
+                    )
 
                     # Создаем процесс Worker и подключаем сигналы
                     self.worker = Worker(self.main_process)
@@ -349,14 +355,24 @@ class Program(QWidget):
         self.label_process.setText(finish_text)
 
     def save_program_state(self):
-        state_str = (f"{self.main_path.text()}\n{int(float(self.height.text()))}\n{self.second_path.text()}\n"
-                     f"{int(float(self.height_crop.text()))}\n{self.dist.text()}\n{self.height_diff.currentText()}\n"
-                     f"{int(float(self.step.text()))}\n{self.cycles.currentText()}\n"
-                     f"{[self.method.currentIndex(), self.method.currentText()]}\n{self.imshow.isChecked()}\n"
-                     f"{self.coord1[0][0]}, {self.coord1[0][1]}\n{self.coord1[1][0]}, {self.coord1[1][1]}\n"
-                     f"{self.coord1[2][0]}, {self.coord1[2][1]}\n"
-                     f"{self.coord2[0][0]}, {self.coord2[0][1]}\n{self.coord2[1][0]}, {self.coord2[1][1]}\n"
-                     f"{self.coord2[2][0]}, {self.coord2[2][1]}")
+        state_str = (
+            f"{self.main_path.text()}\n"
+            f"{int(float(self.height.text()))}\n"
+            f"{self.second_path.text()}\n"
+            f"{int(float(self.height_crop.text()))}\n"
+            f"{self.dist.text()}\n"
+            f"{self.height_diff.currentText()}\n"
+            f"{int(float(self.step.text()))}\n"
+            f"{self.cycles.currentText()}\n"
+            f"{[self.method.currentIndex(), self.method.currentText()]}\n"
+            f"{self.imshow.isChecked()}\n"
+            f"{self.coord1[0][0]}, {self.coord1[0][1]}\n"
+            f"{self.coord1[1][0]}, {self.coord1[1][1]}\n"
+            f"{self.coord1[2][0]}, {self.coord1[2][1]}\n"
+            f"{self.coord2[0][0]}, {self.coord2[0][1]}\n"
+            f"{self.coord2[1][0]}, {self.coord2[1][1]}\n"
+            f"{self.coord2[2][0]}, {self.coord2[2][1]}"
+        )
         with open("Program state.txt", "w") as out_file:
             out_file.write(state_str)
 
@@ -481,7 +497,7 @@ class Program(QWidget):
         if float(self.height.text()) < 20 or float(self.height_crop.text()) < 20 or float(self.height.text()) < float(
                 self.height_crop.text()):
             return True
-        if float(self.dist.text()) < 0.01 or float(self.dist.text()) > 1 or float(self.step.text()) < 50:
+        if float(self.dist.text()) < 0.1 or float(self.dist.text()) > 1 or float(self.step.text()) < 0:
             return True
 
         return False

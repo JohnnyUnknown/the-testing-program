@@ -1,12 +1,12 @@
-C:\\My\\Projects\\images\\main\\WK_00005-1.jpg
+WK_00005-1.jpg
 500
-C:\\My\\Projects\\images\\main\\WK_00004-1.jpg
+WK_00004-1.jpg
 400
-0.5
-3
-1500
-1
-[0, 'SIFT']
+0.48
+4
+50
+4
+[3, 'ASIFT']
 True
 48.245954, 46.164273
 48.238956, 46.166415

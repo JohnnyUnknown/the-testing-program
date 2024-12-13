@@ -63,20 +63,6 @@ def augmentation(img, aug_index):
     return out_img
 
 
-# Методы предобработки изображений
-def clahe_improvement(img):
-    clahe = cv.createCLAHE(2, (5, 5))
-    # bgr = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
-    # lab = cv.cvtColor(bgr, cv.COLOR_BGR2LAB)
-    # l, a, b = cv.split(lab)
-    # l2 = clahe.apply(l)
-    # lab = cv.merge((l2, a, b))
-    # img2 = cv.cvtColor(lab, cv.COLOR_LAB2BGR)
-    # img2 = cv.cvtColor(img2, cv.COLOR_BGR2GRAY)
-    img2 = clahe.apply(img)
-    return img2
-
-
 def gauss_improvement(img):
     # Дилатация (увеличение светлых пятен)
     # img2 = cv.dilate(img, (3, 3), iterations=1)

@@ -4,13 +4,9 @@ import numpy as np
 
 # Функция для применения аффинного преобразования
 def affine_transform(img, tilt, rotate):
-    # Получаем размеры изображения
     (h, w) = img.shape[:2]
-
-    # Определяем центр изображения
     center = (w // 2, h // 2)
 
-    # Вычисляем матрицу поворота
     M = cv2.getRotationMatrix2D(center, rotate, 1.0)
 
     # Вычисляем косинус и синус из матрицы поворота
@@ -46,11 +42,9 @@ def affine_transform(img, tilt, rotate):
 
 
 def asift_detectAndCompute(img1, sift):
-    # Определяем углы наклона и поворота для аффинных преобразований
-    tilt_angles = [0, 5]  # Наклоны
-    rotate_angles = [0, 90, 180]  # Повороты
+    tilt_angles = [0, 5, 10]  # Наклоны
+    rotate_angles = [0, 180]  # Повороты
 
-    # Обработка изображения
     kp_asift, des_asift = [], []
     for tilt in tilt_angles:
         for rotate in rotate_angles:
@@ -60,7 +54,6 @@ def asift_detectAndCompute(img1, sift):
             if des is not None:
                 des_asift.extend(des)
 
-    # Преобразование дескрипторов в numpy массив
     des_asift = np.array(des_asift)
 
     return kp_asift, des_asift

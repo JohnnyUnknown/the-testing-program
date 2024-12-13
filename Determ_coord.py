@@ -1,6 +1,5 @@
 import math
 
-
 class Determ_coord():
     point1, point2, point3, point4 = None, None, None, None
     point_pixel1, point_pixel2, point_pixel3, point_pixel4 = None, None, None, None
@@ -37,7 +36,6 @@ class Determ_coord():
         # print(f"{pixel_center=}, {self.target_pixel_point=}")
         if self.angle != 0:
             self.new_center()
-            # print(f"{pixel_center=}, {self.target_pixel_point=}")
             self.target_point[0] = self.find_latitude()
             self.target_point[1] = self.find_longitude()
         else:
