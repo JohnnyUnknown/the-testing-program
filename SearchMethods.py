@@ -5,6 +5,7 @@ import demo_superpoint
 import AffineTransform as Affine
 from superpoint_superglue_deployment import Matcher
 from typing import Tuple, List
+from sys import path
 
 """! В этом модуле определён класс Method для выбора способа нахождения контрольных точек и их дескрипторов. """
 
@@ -33,8 +34,7 @@ class Method:
                 self.search_model = cv.ORB_create(nfeatures=60000)
             case 5:
                 self.search_model = demo_superpoint.SuperPointNet()
-                self.search_model.load_state_dict(torch.load('C:\\My\\Projects\\SuperPoint\\superpoint_v1.pth',
-                                                             weights_only=True))
+                self.search_model.load_state_dict(torch.load(path[0] + '\\superpoint_v1.pth', weights_only=True))
             case _:
                 self.search_model = cv.SIFT_create()  # nOctaveLayers=3, contrastThreshold=0.03, edgeThreshold=10
 

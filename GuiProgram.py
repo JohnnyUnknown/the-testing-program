@@ -4,6 +4,7 @@ from PyQt5.QtGui import QFont
 import MainProcess
 import sys
 import os
+import re
 
 """! В этом модуле определён класс Worker, создающий дополнительный поток в котором происходят основные вычисления и
     класс Program, создающий пользовательский интерфейс. """
@@ -102,6 +103,7 @@ class Program(QWidget):
         label_path.setMaximumHeight(30)
         layouts_for_right[0].addWidget(label_path, 0, 0, 1, 6)
         self.main_path = QLineEdit(self)
+        self.main_path.setText(sys.path[0] + "\\")
         self.main_path.setMinimumWidth(300)
         self.main_path.setMinimumHeight(25)
         self.main_path.textChanged.connect(self.clear_main_height)
@@ -113,6 +115,7 @@ class Program(QWidget):
         label_path2.setMaximumHeight(30)
         layouts_for_right[0].addWidget(label_path2, 3, 0, 1, 6)
         self.second_path = QLineEdit(self)
+        self.second_path.setText(sys.path[0] + "\\")
         self.second_path.setMinimumWidth(300)
         self.second_path.setMinimumHeight(25)
         self.second_path.textChanged.connect(self.clear_crop_height)
@@ -230,11 +233,13 @@ class Program(QWidget):
         self.cycles.addItems(["1", "2", "3", "4", "5"])
         self.cycles.setStyleSheet("font-size: 14px; font-weight: 500;")
         self.dist = QLineEdit(self)
+        self.dist.setText("0.5")
         self.dist.setMinimumWidth(100)
         self.dist.setMaximumWidth(120)
         self.dist.setStyleSheet("font-size: 14px; font-weight: 500;")
         self.dist.setAlignment(Qt.AlignCenter)
         self.step = QLineEdit(self)
+        self.step.setText("100")
         self.step.setMinimumWidth(100)
         self.step.setMaximumWidth(120)
         self.step.setStyleSheet("font-size: 14px; font-weight: 500;")
@@ -402,12 +407,11 @@ class Program(QWidget):
             f"{self.coord2[1][0]}, {self.coord2[1][1]}\n"
             f"{self.coord2[2][0]}, {self.coord2[2][1]}"
         )
-        with open("Program state.txt", "w") as out_file:
+        with open(sys.path[0] + "\\Program state.txt", "w") as out_file:
             out_file.write(state_str)
 
     def load_program_state(self):
         """! Загрузка состояния программы из файла. """
-
         def format(string):
             coord1 = string.split(",")[0]
             coord2 = string[len(coord1) + 2:]
@@ -417,7 +421,7 @@ class Program(QWidget):
             return string
 
         try:
-            with open("Program state.txt", "r") as out_file:
+            with open(sys.path[0] + "\\Program state.txt", "r") as out_file:
                 states = out_file.readlines()
 
             for state in states:
@@ -445,7 +449,6 @@ class Program(QWidget):
             self.crop_coord_2.setText(format(states[14][:-1]))
             self.crop_coord_3.setText(format(states[15]))
 
-
         except FileNotFoundError:
             pass
         except IndexError:
@@ -454,61 +457,36 @@ class Program(QWidget):
     def entering_coordinates(self) -> bool:
         """! Ввод координат углов изображений. Проверяет корректность введенных данных.
             Возвращает True, если данные некорректны, иначе False. """
-        nums = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "."]
-
-        def char_for_split(string):
-            for char in string:
-                if char not in nums:
-                    return char
-
-        def num_for_split(string):
-            index = 0
-            for char in string:
-                if char not in nums:
-                    index += 1
-                else:
-                    break
-            return index
-
-        def coordinates(string):
-            if len(string) < 16:
-                return 0, 0
-            coord1 = string.split(char_for_split(string))[0]
-            index = len(coord1)
-            coord1 = coord1 if len(coord1) == 9 else coord1 + "0" * (9 - len(coord1))
-            index += num_for_split(string.split(char_for_split(string))[1])
-            coord2 = string[index:].strip()
-            coord2 = coord2.split(char_for_split(coord2))[0]
-            coord2 = coord2 if len(coord2) == 9 else coord2 + "0" * (9 - len(coord2))
-            coord1 = float(coord1)
-            coord2 = float(coord2)
-            return coord1, coord2
-
+        pattern = r'^(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)$'
         try:
-            point_main1 = coordinates(self.main_coord_1.text())
-            point_main2 = coordinates(self.main_coord_2.text())
-            point_main3 = coordinates(self.main_coord_3.text())
-            point_view1 = coordinates(self.crop_coord_1.text())
-            point_view2 = coordinates(self.crop_coord_2.text())
-            point_view3 = coordinates(self.crop_coord_3.text())
+            points = []
+            points.append(re.sub(r'[^-0-9.\s,]', '', self.main_coord_1.text()).strip())
+            points.append(re.sub(r'[^-0-9.\s,]', '', self.main_coord_2.text()).strip())
+            points.append(re.sub(r'[^-0-9.\s,]', '', self.main_coord_3.text()).strip())
+            points.append(re.sub(r'[^-0-9.\s,]', '', self.crop_coord_1.text()).strip())
+            points.append(re.sub(r'[^-0-9.\s,]', '', self.crop_coord_2.text()).strip())
+            points.append(re.sub(r'[^-0-9.\s,]', '', self.crop_coord_3.text()).strip())
 
-            fields_list = [point_main1[0], point_main1[1], point_main2[0], point_main2[1], point_main3[0],
-                           point_main3[1], point_view1[0], point_view1[1], point_view2[0], point_view2[1],
-                           point_view3[0], point_view3[1]]
-            for field in fields_list:
-                if len(str(field)) < 7:
+            for i in range(len(points)):
+                if not re.match(pattern, points[i]):
                     return True
 
-            self.main_coord_1.setText(str(point_main1[0]) + ", " + str(point_main1[1]))
-            self.main_coord_2.setText(str(point_main2[0]) + ", " + str(point_main2[1]))
-            self.main_coord_3.setText(str(point_main3[0]) + ", " + str(point_main3[1]))
-            self.crop_coord_1.setText(str(point_view1[0]) + ", " + str(point_view1[1]))
-            self.crop_coord_2.setText(str(point_view2[0]) + ", " + str(point_view2[1]))
-            self.crop_coord_3.setText(str(point_view3[0]) + ", " + str(point_view3[1]))
+            self.main_coord_1.setText(points[0])
+            self.main_coord_2.setText(points[1])
+            self.main_coord_3.setText(points[2])
+            self.crop_coord_1.setText(points[3])
+            self.crop_coord_2.setText(points[4])
+            self.crop_coord_3.setText(points[5])
 
-            self.coord1 = [point_main1, point_main2, point_main3]
-            self.coord2 = [point_view1, point_view2, point_view3]
-
+            for i in range(3):
+                self.coord1.append(points[i].split(", "))
+                self.coord2.append(points[i+3].split(", "))
+            print(self.coord1, self.coord2)
+            for i in range(3):
+                self.coord1[i][0] = float(self.coord1[i][0])
+                self.coord1[i][1] = float(self.coord1[i][1])
+                self.coord2[i][0] = float(self.coord2[i][0])
+                self.coord2[i][1] = float(self.coord2[i][1])
             return False
         except ValueError:
             return True

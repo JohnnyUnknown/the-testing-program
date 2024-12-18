@@ -1,5 +1,6 @@
 # Default ignored files
 /shelf/
+__pycache__
 main_with_points.jpg
 Protocols
 latex
