@@ -1,7 +1,7 @@
 import cv2 as cv
 import numpy as np
 
-""" В этом модуле определены и применяются функции для искажений изображений. """
+"""! В этом модуле определены и применяются функции для искажений изображений. """
 
 # Определение индексов типов искажений изображений для вывода в протокол
 augment = {
@@ -17,10 +17,10 @@ augment = {
 
 
 def rotate_image(img: np.ndarray, degrees: int) -> np.ndarray:
-    """ Поворачивает изображение на заданный угол.
-        :param img: Исходное изображение.
-        :param degrees: Угол поворота в градусах.
-        :return: Повёрнутое изображение. """
+    """! Поворачивает изображение на заданный угол.
+        @param img: Исходное изображение.
+        @param degrees: Угол поворота в градусах.
+        @return: Повёрнутое изображение. """
     height, width = img.shape[:2]
     center_x, center_y = (width / 2, height / 2)
     matrix = cv.getRotationMatrix2D((center_x, center_y), degrees, 1.0)
@@ -29,10 +29,10 @@ def rotate_image(img: np.ndarray, degrees: int) -> np.ndarray:
 
 
 def brightness(img: np.ndarray, value: int) -> np.ndarray:
-    """ Изменяет яркость изображения.
-        :param img: Исходное изображение.
-        :param value: Значение изменения яркости (положительное - увеличение, отрицательное - уменьшение) [-255: 255].
-        :return: Изображение с изменённой яркостью."""
+    """! Изменяет яркость изображения.
+        @param img: Исходное изображение.
+        @param value: Значение изменения яркости (положительное - увеличение, отрицательное - уменьшение) [-255: 255].
+        @return: Изображение с изменённой яркостью."""
     color = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
     hsv = cv.cvtColor(color, cv.COLOR_BGR2HSV)
     h, s, v = cv.split(hsv)
@@ -52,9 +52,9 @@ def brightness(img: np.ndarray, value: int) -> np.ndarray:
 
 
 def add_noise(img: np.ndarray) -> np.ndarray:
-    """ Добавляет шум к изображению.
-        :param img: Исходное изображение.
-        :return: Изображение с добавленным шумом."""
+    """! Добавляет шум к изображению.
+        @param img: Исходное изображение.
+        @return: Изображение с добавленным шумом."""
     noise = np.zeros(img.shape, np.uint8)
     cv.randn(noise, 0, 20)
     img_n = cv.add(img, noise)
@@ -62,19 +62,19 @@ def add_noise(img: np.ndarray) -> np.ndarray:
 
 
 def add_blur(img: np.ndarray) -> np.ndarray:
-    """ Применяет размытие к изображению.
-        :param img: Исходное изображение.
-        :return: Размытое изображение."""
+    """! Применяет размытие к изображению.
+        @param img: Исходное изображение.
+        @return: Размытое изображение."""
     img_bl = cv.blur(img, (5, 5))
     return img_bl
 
 
 def augmentation(img: np.ndarray, augment_index: int) -> np.ndarray:
-    """ Применяет аугментацию к изображению в зависимости от индекса. Значение по ключу соответствующему индексу
+    """! Применяет аугментацию к изображению в зависимости от индекса. Значение по ключу соответствующему индексу
         аугментации в словаре 'augment' будет изменено в соответствии с переданными значениями для изменений.
-        :param img: Исходное изображение.
-        :param augment_index: Индекс аугментации (0-7).
-        :return: Изменённое изображение."""
+        @param img: Исходное изображение.
+        @param augment_index: Индекс аугментации (0-7).
+        @return: Изменённое изображение."""
     out_img = img.copy()
     match augment_index:
         case 1:
@@ -105,21 +105,21 @@ def augmentation(img: np.ndarray, augment_index: int) -> np.ndarray:
 
 
 def resize_img(img: np.ndarray, new_width: int) -> np.ndarray:
-    """ Изменяет размер изображения с сохранением пропорций.
-        :param img: Исходное изображение.
-        :param new_width: Новая ширина изображения.
-        :return: Изображение с изменённым размером."""
+    """! Изменяет размер изображения с сохранением пропорций.
+        @param img: Исходное изображение.
+        @param new_width: Новая ширина изображения.
+        @return: Изображение с изменённым размером."""
     new_height = int(img.shape[0] * (new_width / img.shape[1]))
     resized_image = cv.resize(img, (new_width, new_height))
     return resized_image
 
 
 def definition_of_blur(height: int, altitude: int) -> tuple:
-    """ Определяет параметры размытия в зависимости от разности высот изображений для приведения изображений
+    """! Определяет параметры размытия в зависимости от разности высот изображений для приведения изображений
         к оптимальному виду для сравнения.
-        :param height: Высота первого изображения.
-        :param altitude: Высота второго изображения.
-        :return: Значение ядра размытия."""
+        @param height: Высота первого изображения.
+        @param altitude: Высота второго изображения.
+        @return: Значение ядра размытия."""
     diff = int(height / altitude)
     if diff <= 5:
         return 5, 5

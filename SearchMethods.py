@@ -6,26 +6,26 @@ import AffineTransform as Affine
 from superpoint_superglue_deployment import Matcher
 from typing import Tuple, List
 
-""" В этом модуле определён класс Method для выбора способа нахождения контрольных точек и их дескрипторов. """
+"""! В этом модуле определён класс Method для выбора способа нахождения контрольных точек и их дескрипторов. """
 
 
 class Method:
-    """ Класс Method предназначен для поиска ключевых точек и их сопоставления с использованием различных
+    """! Класс Method предназначен для поиска ключевых точек и их сопоставления с использованием различных
         алгоритмов. Он поддерживает методы SIFT, ORB, AKAZE, ASIFT и SuperPoint. """
     search_model = None
     matcher = None
 
     def __init__(self, method_index: int = 1, dist_kf: float = 0.5):
-        """ Инициализация класса Method для поиска ключевых точек и их сопоставления. Запускает метод
+        """! Инициализация класса Method для поиска ключевых точек и их сопоставления. Запускает метод
             определения способа извлечения КТ и Д.
-            :param method_index: Индекс метода поиска (по умолчанию 1 для SIFT).
-            :param dist_kf: Коэффициент расстояния для фильтрации совпадений (по умолчанию 0.5). """
+            @param method_index: Индекс метода поиска (по умолчанию 1 для SIFT).
+            @param dist_kf: Коэффициент расстояния для фильтрации совпадений (по умолчанию 0.5). """
         self.method_index = method_index
         self.__set_method()
         self.dist_kf = dist_kf
 
     def __set_method(self):
-        """ Устанавливает метод поиска ключевых точек в зависимости от заданного индекса метода. """
+        """! Устанавливает метод поиска ключевых точек в зависимости от заданного индекса метода. """
         match self.method_index:
             case 2:
                 self.search_model = cv.AKAZE_create()
@@ -39,9 +39,9 @@ class Method:
                 self.search_model = cv.SIFT_create()  # nOctaveLayers=3, contrastThreshold=0.03, edgeThreshold=10
 
     def get_kp_and_des(self, img: np.ndarray) -> Tuple[List[cv.KeyPoint], np.ndarray] | Tuple[None, None]:
-        """ Находит ключевые точки и дескрипторы для заданного изображения.
-            :param img: Изображение для обработки.
-            :return: Ключевые точки и дескрипторы (или None, если метод не поддерживается)."""
+        """! Находит ключевые точки и дескрипторы для заданного изображения.
+            @param img: Изображение для обработки.
+            @return: Ключевые точки и дескрипторы (или None, если метод не поддерживается)."""
         if self.method_index == 4:
             kp, des = Affine.asift_detect_and_compute(img, self.search_model)
         elif self.method_index == 5:
@@ -52,7 +52,7 @@ class Method:
         return list(kp), des
 
     def __set_matcher(self):
-        """ Метод определяет способ сравнения дескрипторов изображений или самих изображений в случае
+        """! Метод определяет способ сравнения дескрипторов изображений или самих изображений в случае
             с SuperPoint (method_index == 5). """
         if self.method_index == 3:
             self.matcher = cv.BFMatcher(cv.NORM_HAMMING, crossCheck=True)
@@ -85,12 +85,12 @@ class Method:
                              ) -> (Tuple[None, None, List[cv.DMatch]]
                                    | Tuple[List[cv.KeyPoint], List[cv.KeyPoint], List[cv.DMatch]]
                                    | Tuple[List[cv.KeyPoint], List[cv.KeyPoint], None]):
-        """ Находит общие ключевые точки между двумя изображениями и возвращает их совпадения.
-            :param img1: Первое изображение.
-            :param img2: Второе изображение.
-            :param des1: Дескрипторы первого изображения.
-            :param des2: Дескрипторы второго изображения.
-            :return: Ключевые точки первого и второго изображения (или None, None)
+        """! Находит общие ключевые точки между двумя изображениями и возвращает их совпадения.
+            @param img1: Первое изображение.
+            @param img2: Второе изображение.
+            @param des1: Дескрипторы первого изображения.
+            @param des2: Дескрипторы второго изображения.
+            @return: Ключевые точки первого и второго изображения (или None, None)
                      и список хороших совпадений (или None)."""
         self.__set_matcher()
         key_points1, key_points2 = None, None

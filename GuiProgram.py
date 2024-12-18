@@ -5,33 +5,33 @@ import MainProcess
 import sys
 import os
 
-""" В этом модуле определён класс Worker, создающий дополнительный поток в котором происходят основные вычисления и
+"""! В этом модуле определён класс Worker, создающий дополнительный поток в котором происходят основные вычисления и
     класс Program, создающий пользовательский интерфейс. """
 
 
 class Worker(QThread):
-    """ Класс Worker для выполнения длительных вычислений в отдельном потоке. Используется для предотвращения
+    """! Класс Worker для выполнения длительных вычислений в отдельном потоке. Используется для предотвращения
         блокировки графического интерфейса пользователя (GUI). """
     finished = pyqtSignal()  # Сигнал для завершения работы
 
     def __init__(self, main_process):
-        """ Инициализация рабочего потока.
-            :param main_process: Экземпляр класса MainProcess для выполнения вычислений. """
+        """! Инициализация рабочего потока.
+            @param main_process: Экземпляр класса MainProcess для выполнения вычислений. """
         super().__init__()
         self.main_process = main_process
 
     def run(self):
-        """ Запуск процесса вычислений в отдельном потоке. """
+        """! Запуск процесса вычислений в отдельном потоке. """
         self.main_process.start_cycle()
         self.finished.emit()  # Отправляем сигнал о завершении
 
     def stop(self):
-        """ Установка флага остановки процесса. """
+        """! Установка флага остановки процесса. """
         self.main_process.stop_flag = True
 
 
 class Program(QWidget):
-    """ Класс Program отвечает за создание пользовательского интерфейса и управление процессом вычислений.
+    """! Класс Program отвечает за создание пользовательского интерфейса и управление процессом вычислений.
         Загружает последние настройки и заполняет поля программы, принимает и изменяет данные для обработки,
         сохраняет текущие настройки для последующих запусков. """
     main_process = None
@@ -40,22 +40,22 @@ class Program(QWidget):
     coord2 = []
 
     def __init__(self):
-        """ Инициализация главного окна программы. """
+        """! Инициализация главного окна программы. """
         super().__init__()
         self.worker = None
         self.init_ui()
 
     @staticmethod
     def show_message(txt):
-        """ Отображение сообщения об ошибке в диалоговом окне.
-            :param txt: Сообщение об ошибке для отображения. """
+        """! Отображение сообщения об ошибке в диалоговом окне.
+            @param txt: Сообщение об ошибке для отображения. """
         msg = QMessageBox()
         msg.setWindowTitle("Ошибка")
         msg.setText(txt)
         msg.exec_()
 
     def init_ui(self):
-        """ Настройка пользовательского интерфейса. """
+        """! Настройка пользовательского интерфейса. """
         main_layout = QHBoxLayout()
         left_layout = QVBoxLayout()
         right_layout = QVBoxLayout()
@@ -299,12 +299,12 @@ class Program(QWidget):
         self.load_program_state()
 
     def show_images(self):
-        """ Обновление флага отображения изображений в процессе. """
+        """! Обновление флага отображения изображений в процессе. """
         if self.main_process:
             self.main_process.show_image_flag = self.imshow.isChecked()
 
     def update_text_edit(self):
-        """ Обновление текстового поля вывода информации. """
+        """! Обновление текстового поля вывода информации. """
         self.text_output.clear()
         name_protocol = self.main_process.name_protocol
         states = ""
@@ -319,15 +319,15 @@ class Program(QWidget):
             self.text_output.append(state)
 
     def clear_main_height(self):
-        """ Очистка поля высоты основного изображения. """
+        """! Очистка поля высоты основного изображения. """
         self.height.clear()
 
     def clear_crop_height(self):
-        """ Очистка поля высоты изображения области видимости. """
+        """! Очистка поля высоты изображения области видимости. """
         self.height_crop.clear()
 
     def start_program(self):
-        """ Запуск программы. Проверяет пути и заполненность полей перед началом вычислений. """
+        """! Запуск программы. Проверяет пути и заполненность полей перед началом вычислений. """
         if not self.checking_paths():
             if not self.checking_empty_fields():
                 self.metka_stop = False
@@ -363,7 +363,7 @@ class Program(QWidget):
             self.show_message("Указан неверный путь к файлу!")
 
     def stop_program(self):
-        """ Остановка программы. Устанавливает флаг остановки и завершает поток 'worker'. """
+        """! Остановка программы. Устанавливает флаг остановки и завершает поток 'worker'. """
         self.metka_stop = True
         if self.worker == None or not self.worker.isRunning():
             self.show_message("Нет запущенных вычислений.")
@@ -375,7 +375,7 @@ class Program(QWidget):
                 self.update_text_edit()
 
     def on_finished(self):
-        """ Обработка завершения работы потока worker. Обновляет текстовое поле с информацией о состоянии. """
+        """! Обработка завершения работы потока worker. Обновляет текстовое поле с информацией о состоянии. """
         self.worker.quit()
         self.worker.wait()
         self.update_text_edit()
@@ -383,7 +383,7 @@ class Program(QWidget):
         self.label_process.setText(finish_text)
 
     def save_program_state(self):
-        """ Сохранение текущего состояния программы в файл. """
+        """! Сохранение текущего состояния программы в файл. """
         state_str = (
             f"{self.main_path.text()}\n"
             f"{int(float(self.height.text()))}\n"
@@ -406,7 +406,8 @@ class Program(QWidget):
             out_file.write(state_str)
 
     def load_program_state(self):
-        """ Загрузка состояния программы из файла. """
+        """! Загрузка состояния программы из файла. """
+
         def format(string):
             coord1 = string.split(",")[0]
             coord2 = string[len(coord1) + 2:]
@@ -451,7 +452,7 @@ class Program(QWidget):
             os.remove("Program state.txt")
 
     def entering_coordinates(self) -> bool:
-        """ Ввод координат углов изображений. Проверяет корректность введенных данных.
+        """! Ввод координат углов изображений. Проверяет корректность введенных данных.
             Возвращает True, если данные некорректны, иначе False. """
         nums = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "."]
 
@@ -513,13 +514,13 @@ class Program(QWidget):
             return True
 
     def checking_paths(self) -> bool:
-        """ Проверка существования указанных путей к изображениям.
+        """! Проверка существования указанных путей к изображениям.
             Возвращает True, если хотя бы один путь неверен. """
         if not os.path.exists(self.main_path.text()) or not os.path.exists(self.second_path.text()):
             return True
 
     def checking_empty_fields(self) -> bool:
-        """ Проверка на заполненность обязательных полей. Возвращает True, если есть пустые или некорректные поля."""
+        """! Проверка на заполненность обязательных полей. Возвращает True, если есть пустые или некорректные поля."""
         if self.entering_coordinates():
             return True
 

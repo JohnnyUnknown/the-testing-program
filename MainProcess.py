@@ -10,12 +10,12 @@ from sys import path
 from time import perf_counter
 from typing import List, Tuple
 
-""" В этом модуле определён класс MainProcess, осуществляющий сравнение областей видимости с опорным изображением
+"""! В этом модуле определён класс MainProcess, осуществляющий сравнение областей видимости с опорным изображением
     и функция для тестирования программы без графического интерфейса. """
 
 
 class MainProcess:
-    """ Класс MainProcess предназначен для обработки изображений, сравнения контрольных точек и анализа результатов.
+    """! Класс MainProcess предназначен для обработки изображений, сравнения контрольных точек и анализа результатов.
         Он использует различные методы поиска ключевых точек и может генерировать протоколы с результатами. """
     stop_flag = False   # Флаг остановки процесса. Если установлен в True, процесс будет остановлен.
     determ_main = None  # Объект для определения координат на опорном изображении.
@@ -46,19 +46,19 @@ class MainProcess:
                  coord1: List[Tuple[float, float]],
                  coord2: List[Tuple[float, float]]
                  ):
-        """ Инициализация класса MainProcess.
-            :param path1: Путь к опорному изображению.
-            :param height1: Высота опорного изображения в метрах.
-            :param path2: Путь к изображению области видимости.
-            :param height2: Высота изображения области видимости в метрах.
-            :param dist_kf: Пороговое значение отношения расстояний между дескрипторами.
-            :param height_diff: Коэффициент для изменения размеров области видимости.
-            :param cycles: Количество циклов программы.
-            :param step: Шаг дополнительного смещения области видимости по опорному изображению в пикселях.
-            :param method: Индекс метода поиска контрольных точек (1-5).
-            :param show: Флаг отображения изображений во время обработки.
-            :param coord1: Координаты углов опорного изображения в формате [(lat1, lon1), ...].
-            :param coord2: Координаты углов изображения области видимости в формате [(lat1, lon1), ...]."""
+        """! Инициализация класса MainProcess.
+            @param path1: Путь к опорному изображению.
+            @param height1: Высота опорного изображения в метрах.
+            @param path2: Путь к изображению области видимости.
+            @param height2: Высота изображения области видимости в метрах.
+            @param dist_kf: Пороговое значение отношения расстояний между дескрипторами.
+            @param height_diff: Коэффициент для изменения размеров области видимости.
+            @param cycles: Количество циклов программы.
+            @param step: Шаг дополнительного смещения области видимости по опорному изображению в пикселях.
+            @param method: Индекс метода поиска контрольных точек (1-5).
+            @param show: Флаг отображения изображений во время обработки.
+            @param coord1: Координаты углов опорного изображения в формате [(lat1, lon1), ...].
+            @param coord2: Координаты углов изображения области видимости в формате [(lat1, lon1), ...]."""
         self.main_path = path1
         self.crop_img_path = path2
         self.big_map = cv.imread(self.main_path, cv.IMREAD_GRAYSCALE)
@@ -88,10 +88,10 @@ class MainProcess:
 
     @staticmethod
     def __print_data(all_data: List[str | int], width_table: List[int]) -> str:
-        """ Метод оформляет данные в одну строку с разделителями и отцентрированные по ширине каждого столбца.
-            :param all_data: Данные для записи.
-            :param width_table: Ширина столбцов таблицы.
-            :return: Отформатированная строка данных."""
+        """! Метод оформляет данные в одну строку с разделителями и отцентрированные по ширине каждого столбца.
+            @param all_data: Данные для записи.
+            @param width_table: Ширина столбцов таблицы.
+            @return Отформатированная строка данных."""
         cnt = 0
         out_data = "|"
         for data in all_data:
@@ -103,23 +103,23 @@ class MainProcess:
 
     @staticmethod
     def __print_line(width: List[int]) -> str:
-        """ Формирование строки-разделителя.
-            :param width: Ширина столбцов таблицы.
-            :return: Строка-разделитель. """
+        """! Формирование строки-разделителя.
+            @param width: Ширина столбцов таблицы.
+            @return Строка-разделитель. """
         out_data = "-" * (sum(width) + len(width) + 1) + "\n"
         return out_data
 
     @staticmethod
     def __preprocess_main_image(big_map: np.ndarray) -> np.ndarray:
-        """ Метод предварительной обработки опорного изображения.
-            :param big_map: Опорное изображение.
-            :return: Предобработанное изображение."""
+        """! Метод предварительной обработки опорного изображения.
+            @param big_map: Опорное изображение.
+            @return Предобработанное изображение."""
         big_map = cv.GaussianBlur(big_map, (5, 5), sigmaX=0, sigmaY=0)
         return big_map
 
     def __protocol_head(self, access: str):
-        """ Создаёт файл и записывает в нем заголовок протокола.
-            :param access: Режим доступа к файлу ('w' - запись, 'a' - добавление)."""
+        """! Создаёт файл и записывает в нем заголовок протокола.
+            @param access: Режим доступа к файлу ('w' - запись, 'a' - добавление)."""
         if access == "w":
             if not os.path.exists(path[0] + "\\Protocols"):
                 os.mkdir("Protocols")
@@ -149,10 +149,10 @@ class MainProcess:
             out_file.write(out_str)
 
     def __fluctuation(self, center: List[int], center2: List[int]) -> float:
-        """ Вычисление стандартного отклонения предсказания от истинного значения.
-            :param center: Координаты центра основного изображения.
-            :param center2: Координаты центра изображения области видимости.
-            :return: Стандартное отклонение в метрах."""
+        """! @brief Вычисление стандартного отклонения предсказания от истинного значения.
+            @param center: Координаты центра основного изображения.
+            @param center2: Координаты центра изображения области видимости.
+            @return Стандартное отклонение в метрах."""
         coord_find_point = self.determ_main.calculate(center)
         coord_center = self.determ_vision.calculate(center2)
         fluct = [round(coord_center[0] - coord_find_point[0], 6), round(coord_center[1] - coord_find_point[1], 6)]
@@ -164,10 +164,10 @@ class MainProcess:
         return fluct_meters
 
     def __preprocess_crop_image(self, crop_img: np.ndarray, augmentation_index: int) -> np.ndarray:
-        """ Метод предварительной обработки изображения области видимости.
-            :param crop_img: Изображение области видимости.
-            :param augmentation_index: Индекс типа искажения.
-            :return: Предобработанное изображение области видимости."""
+        """! Метод предварительной обработки изображения области видимости.
+            @param crop_img: Изображение области видимости.
+            @param augmentation_index: Индекс типа искажения.
+            @return Предобработанное изображение области видимости."""
         kernel = Preprocessing.definition_of_blur(self.height, self.height_crop_img)
         crop_img = cv.GaussianBlur(crop_img, kernel, sigmaX=0, sigmaY=0)
         crop_img = Preprocessing.augmentation(crop_img, augmentation_index)
@@ -179,12 +179,12 @@ class MainProcess:
                                general_percent_statistics: List[List[str]],
                                general_fluctuation_statistics: List[List[str]]
                                ):
-        """ Метод считает итоговые статистические значения, формирует итоговую таблицу проверки и записывает
+        """! Метод считает итоговые статистические значения, формирует итоговую таблицу проверки и записывает
             её в 'name_protocol'.
-            :param minutes: Время выполнения программы (минуты).
-            :param seconds: Время выполнения программы (секунды).
-            :param general_percent_statistics: Общая статистика по проценту найденных точек.
-            :param general_fluctuation_statistics: Общая статистика по отклонению найденных точек."""
+            @param minutes: Время выполнения программы (минуты).
+            @param seconds: Время выполнения программы (секунды).
+            @param general_percent_statistics: Общая статистика по проценту найденных точек.
+            @param general_fluctuation_statistics: Общая статистика по отклонению найденных точек."""
         with open(self.name_protocol, "a") as out_file:
             out_file.write(f"\n\nВремя выполнения программы: {minutes} мин. {seconds} сек.\n")
             out_file.write(
@@ -264,7 +264,7 @@ class MainProcess:
                     out_file.write(self.__print_line(self.width_statistic_table))
 
     def start_cycle(self):
-        """ Метод осуществляет взятие участка изображения 'main_crop_img' для имитации области видимости БПЛА
+        """! Метод осуществляет взятие участка изображения 'main_crop_img' для имитации области видимости БПЛА
         и сравнение этого участка с опорным изображением 'big_map', затем берётся новый участок для сравнения
         со смещением по изображению, и так пока не дойдёт до конца. Далее всё повторяется, с применением искажения
         участка изображения 'main_crop_img', пока не применятся все виды искажений.
@@ -446,7 +446,7 @@ class MainProcess:
 
 
 def start():
-    """ Отладочная функция для тестирования программы без графического интерфейса. """
+    """! Отладочная функция для тестирования программы без графического интерфейса. """
     # Для запуска программы без GUI
     main_path = 'C:\\My\\Projects\\images\\main\\WK_00005-1.jpg'  # Опорное изображение
     big_map = None
