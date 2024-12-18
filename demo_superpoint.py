@@ -2,6 +2,8 @@ import numpy as np
 import cv2
 import torch
 
+""" В этом модуле реализовано определение SuperPoint Network."""
+
 # Stub to warn about opencv version.
 if int(cv2.__version__[0]) < 3:  # pragma: no cover
     print('Warning: OpenCV 3 is not installed')
@@ -20,7 +22,7 @@ myjet = np.array([[0., 0., 0.5],
 
 
 class SuperPointNet(torch.nn.Module):
-    """ Pytorch definition of SuperPoint Network. """
+    """ Определение SuperPoint Network. """
 
     def __init__(self):
         super(SuperPointNet, self).__init__()
@@ -44,13 +46,12 @@ class SuperPointNet(torch.nn.Module):
         self.convDb = torch.nn.Conv2d(c5, d1, kernel_size=1, stride=1, padding=0)
 
     def forward(self, x):
-        """ Forward pass that jointly computes unprocessed point and descriptor
-        tensors.
+        """ Прямой проход, который совместно вычисляет необработанные тензоры точек и дескрипторов
         Input
-          x: Image pytorch tensor shaped N x 1 x H x W.
+          x: Изображение тензора pytorch в форме N x 1 x H x W.
         Output
-          semi: Output point pytorch tensor shaped N x 65 x H/8 x W/8.
-          desc: Output descriptor pytorch tensor shaped N x 256 x H/8 x W/8.
+          semi: Выходная точка в форме тензора pytorch N x 65 x H/8 x W/8.
+          desc: Выходной дескриптор в форме тензора pytorch N x 256 x H/8 x W/8.
         """
         # Shared Encoder.
         x = self.relu(self.conv1a(x))
