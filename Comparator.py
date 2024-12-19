@@ -89,28 +89,28 @@ class Compare:
         homo, _ = cv.findHomography(pts1, pts2, cv.RANSAC)
         return homo
 
-    @staticmethod
-    def __deleting_identical_points(main_matches: List[List[int]], crop_matches: List[List[int]]
-                                    ) -> Tuple[List[List[int]], List[List[int]]] | Tuple[List]:
-        """! Удаление одинаковых точек.
-            @param main_matches: Основные совпадения (координаты).
-            @param crop_matches: Совпадения на втором изображении (координаты).
-            @return: Кортеж из уникальных основных и обрезанных совпадений. """
-        matches_1, matches_2 = [], []
-        for i in range(len(main_matches)):
-            flag = True
-            for j in range(len(matches_1)):
-                if main_matches[i] == matches_1[j] and crop_matches[i] == matches_2[j]:
-                    flag = False
-                    break
-            if flag:
-                matches_1.append(main_matches[i])
-                matches_2.append(crop_matches[i])
-
-        if len(matches_1) > 3:
-            return matches_1, matches_2
-        else:
-            return [], []
+    # @staticmethod
+    # def __deleting_identical_points(main_matches: List[List[int]], crop_matches: List[List[int]]
+    #                                 ) -> Tuple[List[List[int]], List[List[int]]] | Tuple[List]:
+    #     """! Удаление одинаковых точек.
+    #         @param main_matches: Основные совпадения (координаты).
+    #         @param crop_matches: Совпадения на втором изображении (координаты).
+    #         @return: Кортеж из уникальных основных и обрезанных совпадений. """
+    #     matches_1, matches_2 = [], []
+    #     for i in range(len(main_matches)):
+    #         flag = True
+    #         for j in range(len(matches_1)):
+    #             if main_matches[i] == matches_1[j] and crop_matches[i] == matches_2[j]:
+    #                 flag = False
+    #                 break
+    #         if flag:
+    #             matches_1.append(main_matches[i])
+    #             matches_2.append(crop_matches[i])
+    #
+    #     if len(matches_1) > 3:
+    #         return matches_1, matches_2
+    #     else:
+    #         return [], []
 
     def print_map(self, center2: List[int]) -> Tuple[np.ndarray, np.ndarray]:
         """! Отображение центра изображения области видимости и найденного положения центра области видимости на
@@ -125,38 +125,38 @@ class Compare:
         crop_img = cv.circle(self.gray, center2, radius=radius, color=color, thickness=radius * 2)
         return main_img, crop_img
 
-    def __pixel_mask(self, matches: List[List[int]]) -> Tuple[List[List[int]], List[int]]:
-        """! Метод отфильтровывает КТ, которые удалены от медианного значения более чем на
-            ширину изображения области видимости с учётом разницы высот.
-            @param matches: Координаты контрольных точек главного изображения.
-            @return: Кортеж из корректных совпадений и их индексов. """
-        correct_matches = []
-        correct_matches_index = []
-        mask_correction = 1
-        match_x = sorted(matches)
-        match_y = sorted(matches, key=lambda y: y[1])
-
-        if len(matches) % 2 == 0:
-            indx1 = int(len(matches) / 2 - 1)
-            indx2 = int(len(matches) / 2)
-            median_y = (match_y[indx1][1] + match_y[indx2][1]) / 2
-            median_x = (match_x[indx1][0] + match_x[indx2][0]) / 2
-        else:
-            indx = int((len(matches) - 1) / 2)
-            median_y = match_y[indx][1]
-            median_x = match_x[indx][0]
-
-        # Нахождение коэффициента разницы высот полета и главного снимка для маски
-        height_coefficient = round(self.height_map / self.flight_altitude, 2)
-
-        for i in range(len(matches)):
-            if ((matches[i][0] >= median_x - self.img1.shape[1] / height_coefficient * mask_correction)
-                    and (matches[i][0] <= median_x + self.img1.shape[1] / height_coefficient * mask_correction)):
-                if ((matches[i][1] >= median_y - self.img1.shape[1] / height_coefficient * mask_correction)
-                        and (matches[i][1] <= median_y + self.img1.shape[1] / height_coefficient * mask_correction)):
-                    correct_matches.append(matches[i])
-                    correct_matches_index.append(i)
-        return correct_matches, correct_matches_index
+    # def __pixel_mask(self, matches: List[List[int]]) -> Tuple[List[List[int]], List[int]]:
+    #     """! Метод отфильтровывает КТ, которые удалены от медианного значения более чем на
+    #         ширину изображения области видимости с учётом разницы высот.
+    #         @param matches: Координаты контрольных точек главного изображения.
+    #         @return: Кортеж из корректных совпадений и их индексов. """
+    #     correct_matches = []
+    #     correct_matches_index = []
+    #     mask_correction = 1
+    #     match_x = sorted(matches)
+    #     match_y = sorted(matches, key=lambda y: y[1])
+    #
+    #     if len(matches) % 2 == 0:
+    #         indx1 = int(len(matches) / 2 - 1)
+    #         indx2 = int(len(matches) / 2)
+    #         median_y = (match_y[indx1][1] + match_y[indx2][1]) / 2
+    #         median_x = (match_x[indx1][0] + match_x[indx2][0]) / 2
+    #     else:
+    #         indx = int((len(matches) - 1) / 2)
+    #         median_y = match_y[indx][1]
+    #         median_x = match_x[indx][0]
+    #
+    #     # Нахождение коэффициента разницы высот полета и главного снимка для маски
+    #     height_coefficient = round(self.height_map / self.flight_altitude, 2)
+    #
+    #     for i in range(len(matches)):
+    #         if ((matches[i][0] >= median_x - self.img1.shape[1] / height_coefficient * mask_correction)
+    #                 and (matches[i][0] <= median_x + self.img1.shape[1] / height_coefficient * mask_correction)):
+    #             if ((matches[i][1] >= median_y - self.img1.shape[1] / height_coefficient * mask_correction)
+    #                     and (matches[i][1] <= median_y + self.img1.shape[1] / height_coefficient * mask_correction)):
+    #                 correct_matches.append(matches[i])
+    #                 correct_matches_index.append(i)
+    #     return correct_matches, correct_matches_index
 
     def __true_center(self, img: np.ndarray, main_matches: List[List[int]], matches: List[List[int]]
                       ) -> Optional[List[int]]:
@@ -172,37 +172,37 @@ class Compare:
             find_center = cv.perspectiveTransform(crop_center, homo)
             true_center = [round(float(find_center[0][0][0])), round(float(find_center[0][0][1]))]
             # Отсеивание выбросов
-            true_center = self.__filtering_emissions(true_center, main_matches)
+            # true_center = self.__filtering_emissions(true_center, main_matches)
             return true_center
         except cv.error:
             print("Ошибка матрицы гомографии.\n")
             return None
 
-    def __filtering_emissions(self, center: List[int], matches: List[List[int]]) -> List[int] | None:
-        """! Метод отфильтровывает координаты, если
-            они удалены от среднего значения более чем на ширину опорного изображения с учётом
-            разницы высот.
-            @param center: Координаты центра области видимости на опорном изображении.
-            @param matches: Список совпадений для анализа выбросов.
-            @return: Координаты центра или None при обнаружении выброса."""
-
-        height_coefficient = round(self.height_map / self.flight_altitude, 2)
-        mask_correction = 1
-        match_x = sorted(matches)
-        match_y = sorted(matches, key=lambda i: i[1])
-
-        # Среднее значение центра по крайним точкам
-        median_x = int((match_x[0][0] + match_x[-1][0]) / 2)
-        median_y = int((match_y[0][1] + match_y[-1][1]) / 2)
-
-        k = 1
-        if (((center[0] < median_x - self.img1.shape[k] / height_coefficient * mask_correction)
-             or (center[0] > median_x + self.img1.shape[k] / height_coefficient * mask_correction))
-                or ((center[1] < median_y - self.img1.shape[k] / height_coefficient * mask_correction)
-                    or (center[1] > median_y + self.img1.shape[k] / height_coefficient * mask_correction))):
-            print(f"Emission found: {center=}")
-            return None
-        return center
+    # def __filtering_emissions(self, center: List[int], matches: List[List[int]]) -> List[int] | None:
+    #     """! Метод отфильтровывает координаты, если
+    #         они удалены от среднего значения более чем на ширину опорного изображения с учётом
+    #         разницы высот.
+    #         @param center: Координаты центра области видимости на опорном изображении.
+    #         @param matches: Список совпадений для анализа выбросов.
+    #         @return: Координаты центра или None при обнаружении выброса."""
+    #
+    #     height_coefficient = round(self.height_map / self.flight_altitude, 2)
+    #     mask_correction = 1
+    #     match_x = sorted(matches)
+    #     match_y = sorted(matches, key=lambda i: i[1])
+    #
+    #     # Среднее значение центра по крайним точкам
+    #     median_x = int((match_x[0][0] + match_x[-1][0]) / 2)
+    #     median_y = int((match_y[0][1] + match_y[-1][1]) / 2)
+    #
+    #     k = 1
+    #     if (((center[0] < median_x - self.img1.shape[k] / height_coefficient * mask_correction)
+    #          or (center[0] > median_x + self.img1.shape[k] / height_coefficient * mask_correction))
+    #             or ((center[1] < median_y - self.img1.shape[k] / height_coefficient * mask_correction)
+    #                 or (center[1] > median_y + self.img1.shape[k] / height_coefficient * mask_correction))):
+    #         print(f"Emission found: {center=}")
+    #         return None
+    #     return center
 
     def comparator(self):
         """! Метод сравнивает два изображения подстилающей поверхности, фильтрует найденные общие КТ этих
@@ -223,12 +223,13 @@ class Compare:
             if good_matches is not None:
                 self.good_match = len(good_matches)
                 main_matches = self.__find_area(good_matches, self.kp1)
-                main_matches, matches_index = self.__pixel_mask(main_matches)
+                matches_index = [i for i in range(len(main_matches))]
+                # main_matches, matches_index = self.__pixel_mask(main_matches)
                 matches_2 = self.__location_images_2(good_matches, kp2, matches_index)
-                main_matches_filter, matches_2_filter = self.__deleting_identical_points(main_matches, matches_2)
+                # main_matches_filter, matches_2_filter = self.__deleting_identical_points(main_matches, matches_2)
                 self.filter_matches = len(main_matches)
-                if len(main_matches_filter) > 3:
-                    self.center = self.__true_center(self.gray, main_matches_filter, matches_2_filter)
+                if len(main_matches) > 3:
+                    self.center = self.__true_center(self.gray, main_matches, matches_2)
                     if self.center:
                         if os.path.exists("main_with_points.jpg"):
                             radius = 10 if self.img1.shape[0] > 1024 else 3

@@ -481,7 +481,6 @@ class Program(QWidget):
             for i in range(3):
                 self.coord1.append(points[i].split(", "))
                 self.coord2.append(points[i+3].split(", "))
-            print(self.coord1, self.coord2)
             for i in range(3):
                 self.coord1[i][0] = float(self.coord1[i][0])
                 self.coord1[i][1] = float(self.coord1[i][1])

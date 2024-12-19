@@ -3,9 +3,9 @@ C:\My\Projects\images\main\WK_00005-1.jpg
 C:\My\Projects\images\main\WK_00004-1.jpg
 400
 0.48
-5
+3
 500
-1
+2
 [0, 'SIFT']
 False
 48.245954, 46.164273
